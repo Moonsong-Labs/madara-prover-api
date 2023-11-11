@@ -128,7 +128,10 @@ fn main() {
 
     download_and_build_stone_prover(dependencies_dir, output_dir);
 
+    let prover_path = output_dir.join("cpu_air_prover");
+    let verifier_path = output_dir.join("cpu_air_verifier");
+
     // Output the build information
-    println!("cargo:rerun-if-changed={output_dir_str}/cairo_air_prover");
-    println!("cargo:rerun-if-changed={output_dir_str}/cairo_air_verifier");
+    println!("cargo:rerun-if-changed={}", prover_path.to_string_lossy());
+    println!("cargo:rerun-if-changed={}", verifier_path.to_string_lossy());
 }
