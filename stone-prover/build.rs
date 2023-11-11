@@ -1,10 +1,14 @@
+/// Clones and builds the Stone Prover C++ repository to integrate it within
+/// this crate.
 extern crate git2;
 
 use std::path::Path;
 
 #[derive(Debug)]
 enum CommandError {
+    /// The command failed with a non-zero return code.
     CommandFailed(std::process::Output),
+    /// The command could not be launched.
     IoError(std::io::Error),
 }
 
@@ -14,6 +18,7 @@ impl From<std::io::Error> for CommandError {
     }
 }
 
+/// Run any shell command line and retrieve its output.
 fn run_command(command: &str) -> Result<std::process::Output, CommandError> {
     let output = std::process::Command::new("sh")
         .arg("-c")
@@ -41,6 +46,7 @@ fn copy_file_from_container(
     Ok(())
 }
 
+/// Copy the prover and verifier binary files from the prover build container.
 fn copy_prover_files_from_container(
     container_name: &str,
     output_dir: &Path,
@@ -55,6 +61,13 @@ fn copy_prover_files_from_container(
     Ok(())
 }
 
+/// Build the Stone Prover and copy binaries to `output_dir`.
+///
+/// The prover repository contains a Dockerfile to build the prover. This function:
+/// 1. Builds the Dockerfile
+/// 2. Starts a container based on the generated image
+/// 3. Extracts the binaries from the container
+/// 4. Stops the container.
 fn build_stone_prover(repo_dir: &Path, output_dir: &Path) {
     // Build the Stone Prover build Docker image
     let image_name = "stone-prover-build:latest";
@@ -76,9 +89,11 @@ fn build_stone_prover(repo_dir: &Path, output_dir: &Path) {
     // Copy the files
     let copy_result = copy_prover_files_from_container(&container_name, output_dir);
 
+    // Stop the container
     let docker_delete_command = format!("docker rm {container_name}");
     run_command(&docker_delete_command).expect("Failed to stop and delete prover build container");
 
+    // Handle a potential error during copy
     if let Err(e) = copy_result {
         panic!(
             "Failed to copy files from the prover build container: {:?}",
@@ -96,6 +111,7 @@ fn download_and_build_stone_prover(dependencies_dir: &Path, output_dir: &Path) {
     build_stone_prover(&repo_clone_dir, output_dir);
 }
 
+/// Clone Git repository `repo_url` to directory `repo_clone_dir`.
 fn clone_repository(repo_url: &str, repo_clone_dir: &Path) {
     if repo_clone_dir.exists() {
         println!("Repository already exists.");
@@ -109,6 +125,7 @@ fn main() {
     let output_dir_str = &std::env::var_os("OUT_DIR").unwrap();
     let output_dir = Path::new(&output_dir_str);
     let dependencies_dir = Path::new("./dependencies");
+
     download_and_build_stone_prover(dependencies_dir, output_dir);
 
     // Output the build information
