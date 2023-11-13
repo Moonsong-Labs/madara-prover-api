@@ -9,3 +9,5 @@ serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 tempfile = "3.8.1"
 thiserror = "1.0.50"
+tokio = { workspace = true }
+
