@@ -61,6 +61,20 @@ fn copy_prover_files_from_container(
     Ok(())
 }
 
+fn make_docker_build_command(repo_dir: &Path, image_name: &str) -> String {
+    let mut docker_build_command = format!(
+        "docker build -t {image_name} {}",
+        repo_dir.to_string_lossy()
+    );
+
+    // Check if a cache image exists. Used by the CI/CD pipeline.
+    if let Ok(build_cache) = std::env::var("STONE_PROVER_DOCKER_CACHE") {
+        docker_build_command.push_str(&format!(" --build-from {build_cache}"));
+    }
+
+    docker_build_command
+}
+
 /// Build the Stone Prover and copy binaries to `output_dir`.
 ///
 /// The prover repository contains a Dockerfile to build the prover. This function:
@@ -71,10 +85,7 @@ fn copy_prover_files_from_container(
 fn build_stone_prover(repo_dir: &Path, output_dir: &Path) {
     // Build the Stone Prover build Docker image
     let image_name = "stone-prover-build:latest";
-    let docker_build_command = format!(
-        "docker build -t {image_name} {}",
-        repo_dir.to_string_lossy()
-    );
+    let docker_build_command = make_docker_build_command(repo_dir, image_name);
     run_command(&docker_build_command).expect("Failed to build Stone Prover using Dockerfile");
 
     // Run a container based on the Docker image
