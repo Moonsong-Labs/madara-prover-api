@@ -102,36 +102,16 @@ fn build_stone_prover(repo_dir: &Path, output_dir: &Path) {
     }
 }
 
-fn download_and_build_stone_prover(dependencies_dir: &Path, output_dir: &Path) {
-    let repo_url = "https://github.com/starkware-libs/stone-prover";
-    let repo_clone_dir = dependencies_dir.join("stone-prover");
-
-    clone_repository(repo_url, &repo_clone_dir);
-
-    build_stone_prover(&repo_clone_dir, output_dir);
-}
-
-/// Clone Git repository `repo_url` to directory `repo_clone_dir`.
-fn clone_repository(repo_url: &str, repo_clone_dir: &Path) {
-    if repo_clone_dir.exists() {
-        println!("Repository already exists.");
-    } else {
-        let _ = git2::Repository::clone(repo_url, repo_clone_dir).unwrap();
-        println!("Cloned repository to {}", repo_clone_dir.to_string_lossy());
-    }
-}
-
 fn main() {
     let output_dir_str = &std::env::var_os("OUT_DIR").unwrap();
     let output_dir = Path::new(&output_dir_str);
-    let dependencies_dir = Path::new("./dependencies");
 
-    download_and_build_stone_prover(dependencies_dir, output_dir);
+    let stone_prover_repo_dir = Path::new("./dependencies/stone-prover");
+    build_stone_prover(stone_prover_repo_dir, output_dir);
 
-    let prover_path = output_dir.join("cpu_air_prover");
-    let verifier_path = output_dir.join("cpu_air_verifier");
-
-    // Output the build information
-    println!("cargo:rerun-if-changed={}", prover_path.to_string_lossy());
-    println!("cargo:rerun-if-changed={}", verifier_path.to_string_lossy());
+    // Rerun if the submodule is updated
+    println!(
+        "cargo:rerun-if-changed={}",
+        "../.git/modules/stone-prover/dependencies/stone-prover/HEAD"
+    );
 }
