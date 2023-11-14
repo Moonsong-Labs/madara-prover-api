@@ -1,0 +1,8 @@
+[package]
+name = "stone-prover"
+version = "0.1.0"
+edition = "2021"
+description = "A Rust wrapper around StarkWare's Stone Prover."
+
+[build-dependencies]
+git2 = "0.18.1"

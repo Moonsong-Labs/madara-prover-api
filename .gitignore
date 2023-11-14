@@ -12,3 +12,9 @@ Cargo.lock
 
 # MSVC Windows builds of rustc generate these, which store debugging information
 *.pdb
+
+# Stone Prover build dependencies
+stone-prover/dependencies/
+
+# IDE files
+.idea/
