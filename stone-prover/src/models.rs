@@ -69,23 +69,23 @@ pub enum Layout {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct MemorySegment {
+pub struct MemorySegmentAddresses {
     pub begin_addr: u32,
     pub stop_ptr: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct MemorySegments {
-    pub program: MemorySegment,
-    pub execution: MemorySegment,
-    pub output: MemorySegment,
-    pub pedersen: MemorySegment,
-    pub range_check: MemorySegment,
-    pub ecdsa: MemorySegment,
+    pub program: MemorySegmentAddresses,
+    pub execution: MemorySegmentAddresses,
+    pub output: MemorySegmentAddresses,
+    pub pedersen: MemorySegmentAddresses,
+    pub range_check: MemorySegmentAddresses,
+    pub ecdsa: MemorySegmentAddresses,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct MemorySlot {
+pub struct PublicMemoryEntry {
     pub address: u32,
     pub value: String,
     pub page: u32,
@@ -97,9 +97,26 @@ pub struct PublicInput {
     pub rc_min: u32,
     pub rc_max: u32,
     pub n_steps: u32,
-    pub memory_segments: MemorySegments,
-    pub public_memory: Vec<MemorySlot>,
+    pub memory_segments: HashMap<String, MemorySegmentAddresses>,
+    pub public_memory: Vec<PublicMemoryEntry>,
     pub dynamic_params: Option<HashMap<String, u32>>,
+}
+
+// TODO: implement Deserialize in cairo-vm types.
+impl<'a> TryFrom<cairo_vm::air_public_input::PublicInput<'a>> for PublicInput {
+    type Error = serde_json::Error;
+
+    /// Converts a Cairo VM `PublicInput` object into our format.
+    ///
+    /// Cairo VM provides an opaque public input struct that does not expose any of its members
+    /// and only implements `Serialize`. Our only solution for now is to serialize this struct
+    /// and deserialize it into our own format.
+    fn try_from(value: cairo_vm::air_public_input::PublicInput<'a>) -> Result<Self, Self::Error> {
+        // Cairo VM PublicInput does not expose members, so we are stuck with this poor
+        // excuse of a conversion function for now.
+        let public_input_str = serde_json::to_string(&value)?;
+        serde_json::from_str::<Self>(&public_input_str)
+    }
 }
 
 #[derive(Serialize, Deserialize, Debug)]

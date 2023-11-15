@@ -5,10 +5,11 @@ edition = "2021"
 description = "A Rust wrapper around StarkWare's Stone Prover."
 
 [dependencies]
+cairo-vm = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
 tempfile = "3.8.1"
-thiserror = "1.0.50"
+thiserror = { workspace = true }
 tokio = { workspace = true }
 
 [dev-dependencies]
