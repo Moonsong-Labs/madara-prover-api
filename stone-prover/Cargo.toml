@@ -6,3 +6,9 @@ description = "A Rust wrapper around StarkWare's Stone Prover."
 
 [build-dependencies]
 git2 = "0.18.1"
+
+[dependencies]
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+tempfile = "3.8.1"
+thiserror = "1.0.50"
