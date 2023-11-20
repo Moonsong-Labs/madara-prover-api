@@ -13,3 +13,4 @@ tokio = { workspace = true }
 
 [dev-dependencies]
 rstest = { workspace = true }
+test-toolkit = { path = "../test-toolkit" }
