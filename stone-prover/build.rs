@@ -1,7 +1,4 @@
-/// Clones and builds the Stone Prover C++ repository to integrate it within
-/// this crate.
-extern crate git2;
-
+/// Builds the Stone Prover C++ submodule to make it callable from the wrapper.
 use std::path::Path;
 
 #[derive(Debug)]
@@ -61,6 +58,20 @@ fn copy_prover_files_from_container(
     Ok(())
 }
 
+fn make_docker_build_command(repo_dir: &Path, image_name: &str) -> String {
+    let mut docker_build_command = format!(
+        "docker build -t {image_name} {}",
+        repo_dir.to_string_lossy()
+    );
+
+    // Check if a cache image exists. Used by the CI/CD pipeline.
+    if let Ok(cache_image) = std::env::var("STONE_PROVER_DOCKER_CACHE") {
+        docker_build_command.push_str(&format!(" --cache-from {cache_image}"));
+    }
+
+    docker_build_command
+}
+
 /// Build the Stone Prover and copy binaries to `output_dir`.
 ///
 /// The prover repository contains a Dockerfile to build the prover. This function:
@@ -71,10 +82,7 @@ fn copy_prover_files_from_container(
 fn build_stone_prover(repo_dir: &Path, output_dir: &Path) {
     // Build the Stone Prover build Docker image
     let image_name = "stone-prover-build:latest";
-    let docker_build_command = format!(
-        "docker build -t {image_name} {}",
-        repo_dir.to_string_lossy()
-    );
+    let docker_build_command = make_docker_build_command(repo_dir, image_name);
     run_command(&docker_build_command).expect("Failed to build Stone Prover using Dockerfile");
 
     // Run a container based on the Docker image
@@ -102,36 +110,13 @@ fn build_stone_prover(repo_dir: &Path, output_dir: &Path) {
     }
 }
 
-fn download_and_build_stone_prover(dependencies_dir: &Path, output_dir: &Path) {
-    let repo_url = "https://github.com/starkware-libs/stone-prover";
-    let repo_clone_dir = dependencies_dir.join("stone-prover");
-
-    clone_repository(repo_url, &repo_clone_dir);
-
-    build_stone_prover(&repo_clone_dir, output_dir);
-}
-
-/// Clone Git repository `repo_url` to directory `repo_clone_dir`.
-fn clone_repository(repo_url: &str, repo_clone_dir: &Path) {
-    if repo_clone_dir.exists() {
-        println!("Repository already exists.");
-    } else {
-        let _ = git2::Repository::clone(repo_url, repo_clone_dir).unwrap();
-        println!("Cloned repository to {}", repo_clone_dir.to_string_lossy());
-    }
-}
-
 fn main() {
     let output_dir_str = &std::env::var_os("OUT_DIR").unwrap();
     let output_dir = Path::new(&output_dir_str);
-    let dependencies_dir = Path::new("./dependencies");
 
-    download_and_build_stone_prover(dependencies_dir, output_dir);
+    let stone_prover_repo_dir = Path::new("./dependencies/stone-prover");
+    build_stone_prover(stone_prover_repo_dir, output_dir);
 
-    let prover_path = output_dir.join("cpu_air_prover");
-    let verifier_path = output_dir.join("cpu_air_verifier");
-
-    // Output the build information
-    println!("cargo:rerun-if-changed={}", prover_path.to_string_lossy());
-    println!("cargo:rerun-if-changed={}", verifier_path.to_string_lossy());
+    // Rerun if the submodule is updated
+    println!("cargo:rerun-if-changed=../.git/modules/stone-prover/dependencies/stone-prover/HEAD");
 }

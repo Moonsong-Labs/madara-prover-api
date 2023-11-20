@@ -1,0 +1,74 @@
+name: Tests
+
+on:
+  push:
+    branches:
+      - "main"
+  pull_request:
+    branches:
+      - "*"
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: 1.73
+          override: true
+          components: rustfmt, clippy
+
+      - name: Set up cargo cache
+        uses: actions/cache@v3
+        continue-on-error: false
+        with:
+          path: |
+            ~/.cargo/bin/
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            target/
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+
+      - name: Log in to Github container registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Set cache image environment variables
+        run: |
+          # Uppercase characters are not allowed in Docker tags
+          cache_image=$(echo ghcr.io/${GITHUB_REPOSITORY}/build-cache | tr '[:upper:]' '[:lower:]')
+          echo "STONE_PROVER_DOCKER_CACHE=$(echo ${cache_image})" >> $GITHUB_ENV
+
+
+      - name: Download Docker cache image (if available)
+        run: docker pull ${STONE_PROVER_DOCKER_CACHE} || true
+
+      - name: Build
+        run: cargo build --verbose
+
+      - name: Lint with Clippy
+        run: cargo clippy -- -D warnings
+
+      - name: Run tests
+        run: cargo test --verbose
+
+      - name: Push the image to the cache
+        # It's not possible to push packages from fork PRs.
+        if: github.event.pull_request.head.repo.full_name == github.repository
+        run: |
+          docker tag stone-prover-build:latest ${STONE_PROVER_DOCKER_CACHE}
+          docker push ${STONE_PROVER_DOCKER_CACHE}
+
