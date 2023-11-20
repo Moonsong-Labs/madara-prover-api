@@ -225,8 +225,10 @@ pub async fn run_prover_async(
 mod test {
     use tempfile::NamedTempFile;
 
+    use test_toolkit::get_fixture_path;
+
     use crate::models::{PrivateInput, Proof};
-    use crate::toolkit::{get_fixture_path, read_json_from_file};
+    use crate::toolkit::read_json_from_file;
 
     use super::*;
 
