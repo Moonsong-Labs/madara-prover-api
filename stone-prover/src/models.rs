@@ -110,8 +110,8 @@ pub struct Proof {
 
 #[cfg(test)]
 mod tests {
-    use crate::toolkit::load_fixture;
     use std::path::Path;
+    use test_toolkit::load_fixture;
 
     use super::*;
 

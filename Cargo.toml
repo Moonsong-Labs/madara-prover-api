@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = ["madara-prover-rpc-client", "madara-prover-rpc-server", "stone-prover"]
+members = ["madara-prover-rpc-client", "madara-prover-rpc-server", "stone-prover", "test-toolkit"]
 
 [workspace.dependencies]
 prost = "0.12.1"

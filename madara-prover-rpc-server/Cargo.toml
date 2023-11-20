@@ -16,3 +16,6 @@ tokio-stream = "0.1.14"
 [build-dependencies]
 tonic-build = { workspace = true }
 
+[dev-dependencies]
+test-toolkit = { path = "../test-toolkit" }
+
