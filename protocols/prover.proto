@@ -1,0 +1,19 @@
+syntax = "proto3";
+package prover;
+
+service Prover {
+    rpc Prove (ProverRequest) returns (stream ProverResponse);
+}
+
+message ProverRequest {
+
+  string public_input = 1;
+  bytes memory = 2;
+  bytes trace = 3;
+  string prover_config = 4;
+  string prover_parameters = 5;
+}
+
+message ProverResponse {
+    string proof_hex = 1;
+}
