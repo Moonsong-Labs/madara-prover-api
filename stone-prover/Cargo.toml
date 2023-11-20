@@ -12,4 +12,5 @@ thiserror = "1.0.50"
 tokio = { workspace = true }
 
 [dev-dependencies]
+rstest = { workspace = true }
 test-toolkit = { path = "../test-toolkit" }
