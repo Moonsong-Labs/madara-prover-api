@@ -128,14 +128,14 @@ pub struct Proof {
 #[cfg(test)]
 mod tests {
     use std::path::Path;
-    use test_cases::load_fixture;
+    use test_cases::load_test_case_file;
 
     use super::*;
 
     /// Sanity check: verify that we can deserialize a private input JSON file.
     #[test]
     fn deserialize_private_input() {
-        let private_input_str = load_fixture("fibonacci/fibonacci_private_input.json");
+        let private_input_str = load_test_case_file("fibonacci/fibonacci_private_input.json");
         let private_input: PrivateInput = serde_json::from_str(&private_input_str)
             .expect("Failed to deserialize private input fixture");
 
@@ -155,7 +155,7 @@ mod tests {
     /// Sanity check: verify that we can deserialize a public input JSON file.
     #[test]
     fn deserialize_public_input() {
-        let public_input_str = load_fixture("fibonacci/fibonacci_public_input.json");
+        let public_input_str = load_test_case_file("fibonacci/fibonacci_public_input.json");
         let public_input: PublicInput = serde_json::from_str(&public_input_str)
             .expect("Failed to deserialize public input fixture");
 
@@ -167,7 +167,7 @@ mod tests {
 
     #[test]
     fn deserialize_solver_parameters() {
-        let parameters_str = load_fixture("fibonacci/cpu_air_params.json");
+        let parameters_str = load_test_case_file("fibonacci/cpu_air_params.json");
         let parameters: ProverParameters = serde_json::from_str(&parameters_str)
             .expect("Failed to deserialize prover parameters fixture");
 

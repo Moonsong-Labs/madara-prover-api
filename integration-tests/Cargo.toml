@@ -1,0 +1,18 @@
+[package]
+name = "integration-tests"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+
+[dev-dependencies]
+rand = "0.8.5"
+madara-prover-rpc-client = { path = "../madara-prover-rpc-client" }
+madara-prover-rpc-server = { path = "../madara-prover-rpc-server" }
+rstest = { workspace = true }
+test-cases = { path = "../test-cases" }
+test-fixtures = { path = "../test-fixtures" }
+tokio = { workspace = true }
+tonic = { workspace = true }
+tower = "0.4.13"

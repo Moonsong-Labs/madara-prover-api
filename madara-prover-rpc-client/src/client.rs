@@ -3,6 +3,7 @@ use tonic::{Status, Streaming};
 
 use crate::prover::prover_client::ProverClient;
 use crate::prover::{ExecutionRequest, ExecutionResponse, ProverRequest, ProverResponse};
+use madara_prover_common::models::{ProverConfig, ProverParameters, PublicInput};
 
 async fn wait_for_streamed_response<ResponseType>(
     stream: Streaming<ResponseType>,
@@ -25,20 +26,24 @@ pub async fn execute_program(
     wait_for_streamed_response(execution_stream).await
 }
 
-pub async fn call_prover(
+pub async fn prove_execution(
     client: &mut ProverClient<tonic::transport::Channel>,
-    public_input: String,
+    public_input: PublicInput,
     memory: Vec<u8>,
     trace: Vec<u8>,
-    prover_config: String,
-    prover_parameters: String,
+    prover_config: ProverConfig,
+    prover_parameters: ProverParameters,
 ) -> Result<ProverResponse, Status> {
+    let public_input_str = serde_json::to_string(&public_input).unwrap();
+    let prover_config_str = serde_json::to_string(&prover_config).unwrap();
+    let prover_parameters_str = serde_json::to_string(&prover_parameters).unwrap();
+
     let request = tonic::Request::new(ProverRequest {
-        public_input,
+        public_input: public_input_str,
         memory,
         trace,
-        prover_config,
-        prover_parameters,
+        prover_config: prover_config_str,
+        prover_parameters: prover_parameters_str,
     });
     let prover_stream = client.prove(request).await?.into_inner();
     wait_for_streamed_response(prover_stream).await
