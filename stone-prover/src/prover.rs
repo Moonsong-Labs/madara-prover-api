@@ -226,7 +226,7 @@ mod test {
     use rstest::{fixture, rstest};
     use tempfile::NamedTempFile;
 
-    use test_toolkit::get_fixture_path;
+    use test_cases::get_fixture_path;
 
     use crate::models::{PrivateInput, Proof};
     use crate::toolkit::read_json_from_file;

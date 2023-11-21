@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = ["madara-prover-rpc-client", "madara-prover-rpc-server", "stone-prover", "test-toolkit"]
+members = ["madara-prover-rpc-client", "madara-prover-rpc-server", "stone-prover", "test-cases"]
 
 [workspace.dependencies]
 cairo-vm = { version = "0.9.0", features = ["lambdaworks-felt"] }

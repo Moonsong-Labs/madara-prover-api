@@ -128,7 +128,7 @@ pub struct Proof {
 #[cfg(test)]
 mod tests {
     use std::path::Path;
-    use test_toolkit::load_fixture;
+    use test_cases::load_fixture;
 
     use super::*;
 
