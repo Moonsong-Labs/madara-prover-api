@@ -12,4 +12,4 @@ serde_json = { workspace = true }
 
 [dev-dependencies]
 rstest = { workspace = true }
-test-fixtures = { path = "../test-fixtures" }
+test-cases = { path = "../test-cases" }

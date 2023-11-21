@@ -3,10 +3,10 @@ use std::path::{Path, PathBuf};
 use tempfile::tempdir;
 
 use crate::error::ProverError;
-use crate::toolkit::{read_json_from_file, write_json_to_file};
 use madara_prover_common::models::{
     PrivateInput, Proof, ProverConfig, ProverParameters, PublicInput,
 };
+use madara_prover_common::toolkit::{read_json_from_file, write_json_to_file};
 
 /// Call the Stone Prover from the command line.
 ///
@@ -230,8 +230,8 @@ mod test {
 
     use test_cases::get_fixture_path;
 
-    use crate::toolkit::read_json_from_file;
     use madara_prover_common::models::{PrivateInput, Proof};
+    use madara_prover_common::toolkit::read_json_from_file;
 
     use super::*;
 
