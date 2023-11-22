@@ -1,9 +1,9 @@
 use tokio_stream::wrappers::ReceiverStream;
 use tonic::{transport::Server, Request, Response, Status};
 
+use madara_prover_common::models::{Proof, ProverConfig, ProverParameters, PublicInput};
 use prover::ProverRequest;
 use stone_prover::error::ProverError;
-use stone_prover::models::{Proof, ProverConfig, ProverParameters, PublicInput};
 use stone_prover::prover::run_prover_async;
 
 use crate::cairo::{extract_run_artifacts, run_in_proof_mode};

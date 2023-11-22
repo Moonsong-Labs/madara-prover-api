@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 pub fn get_fixture_path(filename: &str) -> PathBuf {
     Path::new(env!("CARGO_MANIFEST_DIR"))
-        .join("../stone-prover/tests/fixtures")
+        .join("cases")
         .join(filename)
 }
 

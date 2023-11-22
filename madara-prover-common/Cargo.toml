@@ -1,16 +1,14 @@
 [package]
-name = "stone-prover"
+name = "madara-prover-common"
 version = "0.1.0"
 edition = "2021"
-description = "A Rust wrapper around StarkWare's Stone Prover."
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-madara-prover-common = { path = "../madara-prover-common" }
+cairo-vm = { workspace = true }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-tempfile = "3.8.1"
-thiserror = { workspace = true }
-tokio = { workspace = true }
 
 [dev-dependencies]
 rstest = { workspace = true }
