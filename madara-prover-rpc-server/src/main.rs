@@ -6,11 +6,22 @@ use stone_prover::error::ProverError;
 use stone_prover::models::{Proof, ProverConfig, ProverParameters, PublicInput};
 use stone_prover::prover::run_prover_async;
 
+use crate::cairo::{extract_run_artifacts, run_in_proof_mode};
 use crate::prover::prover_server::{Prover, ProverServer};
-use crate::prover::ProverResponse;
+use crate::prover::{ExecutionRequest, ExecutionResponse, ProverResponse};
+
+mod cairo;
 
 pub mod prover {
     tonic::include_proto!("prover");
+}
+
+fn run_cairo_program_in_proof_mode(
+    execution_request: &ExecutionRequest,
+) -> Result<ExecutionResponse, Status> {
+    let (cairo_runner, vm) = run_in_proof_mode(&execution_request.program)
+        .map_err(|e| Status::internal(format!("Failed to run Cairo program: {e}")))?;
+    extract_run_artifacts(cairo_runner, vm).map_err(|e| Status::internal(e.to_string()))
 }
 
 async fn call_prover(prover_request: &ProverRequest) -> Result<Proof, ProverError> {
@@ -34,17 +45,34 @@ pub struct ProverService {}
 
 #[tonic::async_trait]
 impl Prover for ProverService {
+    type ExecuteStream = ReceiverStream<Result<ExecutionResponse, Status>>;
+
+    async fn execute(
+        &self,
+        request: Request<ExecutionRequest>,
+    ) -> Result<Response<Self::ExecuteStream>, Status> {
+        let execution_request = request.into_inner();
+        let (tx, rx) = tokio::sync::mpsc::channel(1);
+
+        tokio::spawn(async move {
+            let execution_result = run_cairo_program_in_proof_mode(&execution_request);
+            let _ = tx.send(execution_result).await;
+        });
+
+        Ok(Response::new(ReceiverStream::new(rx)))
+    }
+
     type ProveStream = ReceiverStream<Result<ProverResponse, Status>>;
 
     async fn prove(
         &self,
         request: Request<ProverRequest>,
     ) -> Result<Response<Self::ProveStream>, Status> {
-        let r = request.into_inner();
+        let prover_request = request.into_inner();
         let (tx, rx) = tokio::sync::mpsc::channel(1);
 
         tokio::spawn(async move {
-            let prover_result = call_prover(&r)
+            let prover_result = call_prover(&prover_request)
                 .await
                 .map(|proof| ProverResponse {
                     proof_hex: proof.proof_hex,
