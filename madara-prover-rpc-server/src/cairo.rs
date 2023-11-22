@@ -50,7 +50,7 @@ pub fn run_in_proof_mode(
     program_content: &[u8],
 ) -> Result<(CairoRunner, VirtualMachine), CairoRunError> {
     let proof_mode = true;
-    let layout = "plain";
+    let layout = "starknet_with_keccak";
 
     let cairo_run_config = CairoRunConfig {
         entrypoint: "main",
