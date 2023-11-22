@@ -67,7 +67,7 @@ fn make_docker_build_command(repo_dir: &Path, image_name: &str) -> String {
     // Check if the platform is Mac
     #[cfg(target_os = "macos")]
     {
-        // Add Mac-specific command or options
+        // Add build args
         docker_build_command.push_str(" --build-arg CMAKE_ARGS=-DNO_AVX=1");
     }
 
