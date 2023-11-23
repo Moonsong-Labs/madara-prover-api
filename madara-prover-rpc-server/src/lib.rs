@@ -5,12 +5,14 @@ use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::wrappers::UnixListenerStream;
 use tonic::{transport::Server, Request, Response, Status};
 
-use madara_prover_common::models::{Proof, ProverConfig, ProverParameters, PublicInput};
+use madara_prover_common::models::{Proof, ProverConfig, ProverParameters};
 use prover::ProverRequest;
 use stone_prover::error::ProverError;
 use stone_prover::prover::run_prover_async;
 
-use crate::cairo::{extract_run_artifacts, run_in_proof_mode};
+use crate::cairo::{
+    extract_execution_artifacts, run_in_proof_mode, ExecutionArtifacts, ExecutionError,
+};
 use crate::error::ServerError;
 use crate::prover::prover_server::{Prover, ProverServer};
 use crate::prover::{ExecutionRequest, ExecutionResponse, ProverResponse};
@@ -22,28 +24,83 @@ pub mod prover {
     tonic::include_proto!("prover");
 }
 
-fn run_cairo_program_in_proof_mode(
-    execution_request: &ExecutionRequest,
-) -> Result<ExecutionResponse, Status> {
-    let (cairo_runner, vm) = run_in_proof_mode(&execution_request.program)
-        .map_err(|e| Status::internal(format!("Failed to run Cairo program: {e}")))?;
-    extract_run_artifacts(cairo_runner, vm).map_err(|e| Status::internal(e.to_string()))
+fn run_cairo_program_in_proof_mode(program: &[u8]) -> Result<ExecutionArtifacts, ExecutionError> {
+    let (cairo_runner, vm) = run_in_proof_mode(program)?;
+    extract_execution_artifacts(cairo_runner, vm)
 }
 
-async fn call_prover(prover_request: &ProverRequest) -> Result<Proof, ProverError> {
-    let public_input: PublicInput = serde_json::from_str(&prover_request.public_input)?;
-    let prover_config: ProverConfig = serde_json::from_str(&prover_request.prover_config)?;
-    let prover_parameters: ProverParameters =
-        serde_json::from_str(&prover_request.prover_parameters)?;
-
+async fn call_prover(
+    execution_artifacts: &ExecutionArtifacts,
+    prover_config: &ProverConfig,
+    prover_parameters: &ProverParameters,
+) -> Result<Proof, ProverError> {
     run_prover_async(
-        &public_input,
-        &prover_request.memory,
-        &prover_request.trace,
-        &prover_config,
-        &prover_parameters,
+        &execution_artifacts.public_input,
+        &execution_artifacts.memory,
+        &execution_artifacts.trace,
+        prover_config,
+        prover_parameters,
     )
     .await
+}
+
+fn execution_error_to_status(e: ExecutionError) -> Status {
+    match e {
+        ExecutionError::RunFailed(cairo_run_error) => {
+            Status::internal(format!("Failed to run Cairo program: {}", cairo_run_error))
+        }
+        ExecutionError::GeneratePublicInput(public_input_error) => Status::internal(format!(
+            "Failed to generate public input: {}",
+            public_input_error
+        )),
+        ExecutionError::GenerateTrace(trace_error) => Status::internal(format!(
+            "Failed to generate execution trace: {}",
+            trace_error
+        )),
+        ExecutionError::EncodeMemory(encode_error) => Status::internal(format!(
+            "Failed to encode execution memory: {}",
+            encode_error
+        )),
+        ExecutionError::EncodeTrace(encode_error) => Status::internal(format!(
+            "Failed to encode execution memory: {}",
+            encode_error
+        )),
+        ExecutionError::SerializePublicInput(serde_error) => {
+            Status::internal(format!("Failed to serialize public input: {}", serde_error))
+        }
+    }
+}
+
+fn format_execution_result(
+    execution_result: Result<ExecutionArtifacts, ExecutionError>,
+) -> Result<ExecutionResponse, Status> {
+    match execution_result {
+        Ok(artifacts) => serde_json::to_string(&artifacts.public_input)
+            .map(|public_input_str| ExecutionResponse {
+                public_input: public_input_str,
+                memory: artifacts.memory,
+                trace: artifacts.trace,
+            })
+            .map_err(|_| Status::internal("Failed to serialize public input")),
+        Err(e) => Err(execution_error_to_status(e)),
+    }
+}
+
+fn format_prover_error(e: ProverError) -> Status {
+    match e {
+        ProverError::CommandError(prover_output) => Status::invalid_argument(format!(
+            "Prover run failed ({}): {}",
+            prover_output.status,
+            String::from_utf8_lossy(&prover_output.stderr),
+        )),
+        ProverError::IoError(io_error) => {
+            Status::internal(format!("Could not run the prover: {}", io_error))
+        }
+        ProverError::SerdeError(serde_error) => Status::invalid_argument(format!(
+            "Could not parse one or more arguments: {}",
+            serde_error
+        )),
+    }
 }
 
 /// Formats the output of the prover subprocess into the server response.
@@ -54,20 +111,7 @@ fn format_prover_result(
         Ok(proof) => serde_json::to_string(&proof)
             .map(|proof_str| ProverResponse { proof: proof_str })
             .map_err(|_| Status::internal("Could not parse the proof returned by the prover")),
-        Err(e) => Err(match e {
-            ProverError::CommandError(prover_output) => Status::invalid_argument(format!(
-                "Prover run failed ({}): {}",
-                prover_output.status,
-                String::from_utf8_lossy(&prover_output.stderr),
-            )),
-            ProverError::IoError(io_error) => {
-                Status::internal(format!("Could not run the prover: {}", io_error))
-            }
-            ProverError::SerdeError(serde_error) => Status::invalid_argument(format!(
-                "Could not parse one or more arguments: {}",
-                serde_error
-            )),
-        }),
+        Err(e) => Err(format_prover_error(e)),
     }
 }
 
@@ -86,7 +130,8 @@ impl Prover for ProverService {
         let (tx, rx) = tokio::sync::mpsc::channel(1);
 
         tokio::spawn(async move {
-            let execution_result = run_cairo_program_in_proof_mode(&execution_request);
+            let execution_result = run_cairo_program_in_proof_mode(&execution_request.program);
+            let execution_result = format_execution_result(execution_result);
             let _ = tx.send(execution_result).await;
         });
 
@@ -99,16 +144,66 @@ impl Prover for ProverService {
         &self,
         request: Request<ProverRequest>,
     ) -> Result<Response<Self::ProveStream>, Status> {
-        let prover_request = request.into_inner();
+        let ProverRequest {
+            public_input: public_input_str,
+            memory,
+            trace,
+            prover_config: prover_config_str,
+            prover_parameters: prover_parameters_str,
+        } = request.into_inner();
+
+        let public_input = serde_json::from_str(&public_input_str)
+            .map_err(|_| Status::invalid_argument("Could not deserialize public input"))?;
+        let prover_config = serde_json::from_str(&prover_config_str)
+            .map_err(|_| Status::invalid_argument("Could not deserialize prover config"))?;
+        let prover_parameters = serde_json::from_str(&prover_parameters_str)
+            .map_err(|_| Status::invalid_argument("Could not deserialize prover parameters"))?;
+
+        let execution_artifacts = ExecutionArtifacts {
+            public_input,
+            memory,
+            trace,
+        };
+
         let (tx, rx) = tokio::sync::mpsc::channel(1);
 
         tokio::spawn(async move {
-            let prover_result = call_prover(&prover_request).await;
+            let prover_result =
+                call_prover(&execution_artifacts, &prover_config, &prover_parameters).await;
             let formatted_result = format_prover_result(prover_result);
             let _ = tx.send(formatted_result).await;
         });
 
         Ok(Response::new(ReceiverStream::new(rx)))
+    }
+
+    async fn execute_and_prove(
+        &self,
+        request: Request<ExecutionRequest>,
+    ) -> Result<Response<ProverResponse>, Status> {
+        let ExecutionRequest {
+            program,
+            prover_config: prover_config_str,
+            prover_parameters: prover_parameters_str,
+        } = request.into_inner();
+
+        let prover_config_str = prover_config_str.ok_or(Status::unimplemented(
+            "Prover config cannot be automatically generated yet",
+        ))?;
+        let prover_parameters_str = prover_parameters_str.ok_or(Status::unimplemented(
+            "Prover parameters cannot be automatically generated yet",
+        ))?;
+        let prover_config: ProverConfig = serde_json::from_str(&prover_config_str)
+            .map_err(|_| Status::invalid_argument("Could not read prover config"))?;
+        let prover_parameters: ProverParameters = serde_json::from_str(&prover_parameters_str)
+            .map_err(|_| Status::invalid_argument("Could not read prover parameters"))?;
+
+        let execution_artifacts = run_cairo_program_in_proof_mode(&program)
+            .map_err(|e| Status::internal(format!("Failed to run program: {e}")))?;
+        let prover_result =
+            call_prover(&execution_artifacts, &prover_config, &prover_parameters).await;
+
+        format_prover_result(prover_result).map(Response::new)
     }
 }
 

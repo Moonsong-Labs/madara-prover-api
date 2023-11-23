@@ -15,12 +15,15 @@ async fn wait_for_streamed_response<ResponseType>(
     Err(Status::cancelled("server-side stream was dropped"))
 }
 
+/// Execute a program in proof mode and retrieve the execution artifacts.
 pub async fn execute_program(
     client: &mut ProverClient<tonic::transport::Channel>,
     program_content: Vec<u8>,
 ) -> Result<ExecutionResponse, Status> {
     let request = tonic::Request::new(ExecutionRequest {
         program: program_content,
+        prover_config: None,
+        prover_parameters: None,
     });
     let execution_stream = client.execute(request).await?.into_inner();
     wait_for_streamed_response(execution_stream).await
@@ -34,6 +37,7 @@ fn unpack_prover_response(prover_result: Result<ProverResponse, Status>) -> Resu
     }
 }
 
+/// Prove the execution of a program.
 pub async fn prove_execution(
     client: &mut ProverClient<tonic::transport::Channel>,
     public_input: PublicInput,
@@ -55,5 +59,28 @@ pub async fn prove_execution(
     });
     let prover_stream = client.prove(request).await?.into_inner();
     let prover_result = wait_for_streamed_response(prover_stream).await;
+    unpack_prover_response(prover_result)
+}
+
+/// Execute and prove a program.
+pub async fn execute_and_prove(
+    client: &mut ProverClient<tonic::transport::Channel>,
+    program_content: Vec<u8>,
+    prover_config: ProverConfig,
+    prover_parameters: ProverParameters,
+) -> Result<Proof, Status> {
+    let prover_config_str = serde_json::to_string(&prover_config).unwrap();
+    let prover_parameters_str = serde_json::to_string(&prover_parameters).unwrap();
+
+    let request = ExecutionRequest {
+        program: program_content,
+        prover_config: Some(prover_config_str),
+        prover_parameters: Some(prover_parameters_str),
+    };
+
+    let prover_result = client
+        .execute_and_prove(request)
+        .await
+        .map(|response| response.into_inner());
     unpack_prover_response(prover_result)
 }

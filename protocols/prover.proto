@@ -4,10 +4,13 @@ package prover;
 service Prover {
     rpc Execute(ExecutionRequest) returns (stream ExecutionResponse);
     rpc Prove (ProverRequest) returns (stream ProverResponse);
+    rpc ExecuteAndProve(ExecutionRequest) returns (ProverResponse);
 }
 
 message ExecutionRequest {
   bytes program = 1;
+  optional string prover_config = 2;
+  optional string prover_parameters = 3;
 }
 
 message ExecutionResponse {
@@ -17,7 +20,6 @@ message ExecutionResponse {
 }
 
 message ProverRequest {
-
   string public_input = 1;
   bytes memory = 2;
   bytes trace = 3;
