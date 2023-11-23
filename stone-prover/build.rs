@@ -64,6 +64,14 @@ fn make_docker_build_command(repo_dir: &Path, image_name: &str) -> String {
         repo_dir.to_string_lossy()
     );
 
+    // Check if the platform is Mac
+    #[cfg(target_os = "macos")]
+    {
+        // Add build args
+        docker_build_command.push_str(" --build-arg CMAKE_ARGS=-DNO_AVX=1");
+    }
+
+
     // Check if a cache image exists. Used by the CI/CD pipeline.
     if let Ok(cache_image) = std::env::var("STONE_PROVER_DOCKER_CACHE") {
         docker_build_command.push_str(&format!(" --cache-from {cache_image}"));
