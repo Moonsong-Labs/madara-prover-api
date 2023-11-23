@@ -10,10 +10,12 @@ use cairo_vm::vm::runners::cairo_runner::CairoRunner;
 use cairo_vm::vm::vm_core::VirtualMachine;
 use thiserror::Error;
 
-use crate::prover::ExecutionResponse;
+use madara_prover_common::models::PublicInput;
 
 #[derive(Error, Debug)]
 pub enum ExecutionError {
+    #[error("failed to run Cairo program")]
+    RunFailed(#[from] CairoRunError),
     #[error("failed to generate public input")]
     GeneratePublicInput(#[from] PublicInputError),
     #[error("failed to generate program execution trace")]
@@ -67,16 +69,23 @@ pub fn run_in_proof_mode(
     cairo_run(program_content, &cairo_run_config, &mut hint_processor)
 }
 
+pub struct ExecutionArtifacts {
+    pub public_input: PublicInput,
+    pub memory: Vec<u8>,
+    pub trace: Vec<u8>,
+}
+
 // TODO: split in two (extract data + format to ExecutionResponse)
 /// Extracts execution artifacts from the runner and VM (after execution).
 ///
 /// * `cairo_runner` Cairo runner object.
 /// * `vm`: Cairo VM object.
-pub fn extract_run_artifacts(
+pub fn extract_execution_artifacts(
     cairo_runner: CairoRunner,
     vm: VirtualMachine,
-) -> Result<ExecutionResponse, ExecutionError> {
+) -> Result<ExecutionArtifacts, ExecutionError> {
     let cairo_vm_public_input = cairo_runner.get_air_public_input(&vm)?;
+
     let memory = cairo_runner.relocated_memory.clone();
     let trace = vm.get_relocated_trace()?;
 
@@ -88,10 +97,10 @@ pub fn extract_run_artifacts(
     write_encoded_trace(trace, &mut trace_writer).map_err(ExecutionError::EncodeTrace)?;
     let trace_raw = trace_writer.buf;
 
-    let public_input_str = serde_json::to_string(&cairo_vm_public_input)?;
+    let public_input = PublicInput::try_from(cairo_vm_public_input)?;
 
-    Ok(ExecutionResponse {
-        public_input: public_input_str,
+    Ok(ExecutionArtifacts {
+        public_input,
         memory: memory_raw,
         trace: trace_raw,
     })
