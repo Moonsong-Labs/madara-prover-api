@@ -3,7 +3,7 @@ use tonic::{Status, Streaming};
 
 use crate::prover::prover_client::ProverClient;
 use crate::prover::{ExecutionRequest, ExecutionResponse, ProverRequest, ProverResponse};
-use madara_prover_common::models::{ProverConfig, ProverParameters, PublicInput};
+use madara_prover_common::models::{Proof, ProverConfig, ProverParameters, PublicInput};
 
 async fn wait_for_streamed_response<ResponseType>(
     stream: Streaming<ResponseType>,
@@ -26,6 +26,14 @@ pub async fn execute_program(
     wait_for_streamed_response(execution_stream).await
 }
 
+fn unpack_prover_response(prover_result: Result<ProverResponse, Status>) -> Result<Proof, Status> {
+    match prover_result {
+        Ok(prover_response) => serde_json::from_str(&prover_response.proof)
+            .map_err(|e| Status::internal(format!("Could not read prover output: {}", e))),
+        Err(status) => Err(status),
+    }
+}
+
 pub async fn prove_execution(
     client: &mut ProverClient<tonic::transport::Channel>,
     public_input: PublicInput,
@@ -33,7 +41,7 @@ pub async fn prove_execution(
     trace: Vec<u8>,
     prover_config: ProverConfig,
     prover_parameters: ProverParameters,
-) -> Result<ProverResponse, Status> {
+) -> Result<Proof, Status> {
     let public_input_str = serde_json::to_string(&public_input).unwrap();
     let prover_config_str = serde_json::to_string(&prover_config).unwrap();
     let prover_parameters_str = serde_json::to_string(&prover_parameters).unwrap();
@@ -46,5 +54,6 @@ pub async fn prove_execution(
         prover_parameters: prover_parameters_str,
     });
     let prover_stream = client.prove(request).await?.into_inner();
-    wait_for_streamed_response(prover_stream).await
+    let prover_result = wait_for_streamed_response(prover_stream).await;
+    unpack_prover_response(prover_result)
 }

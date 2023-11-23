@@ -26,5 +26,5 @@ message ProverRequest {
 }
 
 message ProverResponse {
-    string proof_hex = 1;
+    string proof = 1;
 }
