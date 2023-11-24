@@ -1,7 +1,11 @@
 {
-    "trace_path": "/home/root/fibonacci_trace.json",
-    "memory_path": "/home/root/fibonacci_memory.json",
+    "trace_path": "/home/root/fibonacci_trace.bin",
+    "memory_path": "/home/root/fibonacci_memory.bin",
     "pedersen": [],
     "range_check": [],
-    "ecdsa": []
+    "ecdsa": [],
+    "bitwise": [],
+    "ec_op": [],
+    "keccak": [],
+    "poseidon": []
 }

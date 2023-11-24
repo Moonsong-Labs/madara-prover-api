@@ -46,6 +46,10 @@ pub struct PrivateInput {
     pub pedersen: Vec<u32>,
     pub range_check: Vec<u32>,
     pub ecdsa: Vec<u32>,
+    pub bitwise: Vec<u32>,
+    pub ec_op: Vec<u32>,
+    pub keccak: Vec<u32>,
+    pub poseidon: Vec<u32>,
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
@@ -141,11 +145,11 @@ mod tests {
 
         assert_eq!(
             private_input.memory_path,
-            Path::new("/home/root/fibonacci_memory.json")
+            Path::new("/home/root/fibonacci_memory.bin")
         );
         assert_eq!(
             private_input.trace_path,
-            Path::new("/home/root/fibonacci_trace.json")
+            Path::new("/home/root/fibonacci_trace.bin")
         );
         assert_eq!(private_input.pedersen, Vec::<u32>::new());
         assert_eq!(private_input.range_check, Vec::<u32>::new());
@@ -160,8 +164,8 @@ mod tests {
             .expect("Failed to deserialize public input fixture");
 
         // We don't check all fields, just ensure that we can deserialize the fixture
-        assert_eq!(public_input.layout, Layout::Small);
-        assert_eq!(public_input.n_steps, 512);
+        assert_eq!(public_input.layout, Layout::StarknetWithKeccak);
+        assert_eq!(public_input.n_steps, 32768);
         assert_eq!(public_input.dynamic_params, None);
     }
 

@@ -65,7 +65,7 @@ mod tests {
     async fn test_execute(#[future] rpc_client_server: (RpcClient, RpcServer)) {
         let (mut client, _server) = rpc_client_server.await;
 
-        let program_path = get_test_case_file_path("fibonacci-no-hint/fibonacci_compiled.json");
+        let program_path = get_test_case_file_path("fibonacci/fibonacci_compiled.json");
         let program_content = std::fs::read(program_path).unwrap();
 
         let result = execute_program(&mut client, program_content).await;

@@ -136,6 +136,10 @@ fn prepare_prover_files(
         pedersen: vec![],
         range_check: vec![],
         ecdsa: vec![],
+        bitwise: vec![],
+        ec_op: vec![],
+        keccak: vec![],
+        poseidon: vec![],
     };
 
     write_json_to_file(private_input, &private_input_file)?;
