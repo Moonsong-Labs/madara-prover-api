@@ -2,8 +2,8 @@ syntax = "proto3";
 package prover;
 
 service Prover {
-    rpc Execute(ExecutionRequest) returns (stream ExecutionResponse);
-    rpc Prove (ProverRequest) returns (stream ProverResponse);
+    rpc Execute(ExecutionRequest) returns (ExecutionResponse);
+    rpc Prove (ProverRequest) returns (ProverResponse);
     rpc ExecuteAndProve(ExecutionRequest) returns (ProverResponse);
 }
 
