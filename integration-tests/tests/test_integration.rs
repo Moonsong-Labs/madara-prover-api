@@ -93,7 +93,7 @@ mod tests {
 
         assert!(result.is_ok(), "{:?}", result);
 
-        let prover_response = result.unwrap();
-        assert_eq!(prover_response.proof_hex, test_case.proof.proof_hex);
+        let proof = result.unwrap();
+        assert_eq!(proof.proof_hex, test_case.proof.proof_hex);
     }
 }

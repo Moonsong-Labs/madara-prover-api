@@ -46,6 +46,31 @@ async fn call_prover(prover_request: &ProverRequest) -> Result<Proof, ProverErro
     .await
 }
 
+/// Formats the output of the prover subprocess into the server response.
+fn format_prover_result(
+    prover_result: Result<Proof, ProverError>,
+) -> Result<ProverResponse, Status> {
+    match prover_result {
+        Ok(proof) => serde_json::to_string(&proof)
+            .map(|proof_str| ProverResponse { proof: proof_str })
+            .map_err(|_| Status::internal("Could not parse the proof returned by the prover")),
+        Err(e) => Err(match e {
+            ProverError::CommandError(prover_output) => Status::invalid_argument(format!(
+                "Prover run failed ({}): {}",
+                prover_output.status,
+                String::from_utf8_lossy(&prover_output.stderr),
+            )),
+            ProverError::IoError(io_error) => {
+                Status::internal(format!("Could not run the prover: {}", io_error))
+            }
+            ProverError::SerdeError(serde_error) => Status::invalid_argument(format!(
+                "Could not parse one or more arguments: {}",
+                serde_error
+            )),
+        }),
+    }
+}
+
 #[derive(Debug, Default)]
 pub struct ProverService {}
 
@@ -78,13 +103,9 @@ impl Prover for ProverService {
         let (tx, rx) = tokio::sync::mpsc::channel(1);
 
         tokio::spawn(async move {
-            let prover_result = call_prover(&prover_request)
-                .await
-                .map(|proof| ProverResponse {
-                    proof_hex: proof.proof_hex,
-                })
-                .map_err(|e| Status::invalid_argument(format!("Prover run failed: {e}")));
-            let _ = tx.send(prover_result).await;
+            let prover_result = call_prover(&prover_request).await;
+            let formatted_result = format_prover_result(prover_result);
+            let _ = tx.send(formatted_result).await;
         });
 
         Ok(Response::new(ReceiverStream::new(rx)))
