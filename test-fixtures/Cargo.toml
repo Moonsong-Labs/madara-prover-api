@@ -1,19 +1,14 @@
 [package]
-name = "madara-prover-rpc-client"
+name = "test-fixtures"
 version = "0.1.0"
 edition = "2021"
+publish = false
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 madara-prover-common = { path = "../madara-prover-common" }
-prost = { workspace = true }
-serde_json = { workspace = true }
-tokio = { workspace = true }
-tonic = { workspace = true }
-
-[build-dependencies]
-tonic-build = { workspace = true }
-
-[dev-dependencies]
 rstest = { workspace = true }
+serde_json = { workspace = true }
+tempfile = { workspace = true }
+test-cases = { path = "../test-cases" }

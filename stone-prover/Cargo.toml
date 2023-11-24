@@ -8,10 +8,11 @@ description = "A Rust wrapper around StarkWare's Stone Prover."
 madara-prover-common = { path = "../madara-prover-common" }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }
-tempfile = "3.8.1"
+tempfile = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 
 [dev-dependencies]
 rstest = { workspace = true }
 test-cases = { path = "../test-cases" }
+test-fixtures = { path = "../test-fixtures" }

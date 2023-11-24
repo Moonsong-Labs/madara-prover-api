@@ -1,5 +1,5 @@
 /// Builds the Stone Prover C++ submodule to make it callable from the wrapper.
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 #[derive(Debug)]
 enum CommandError {
@@ -119,11 +119,13 @@ fn build_stone_prover(repo_dir: &Path, output_dir: &Path) {
 }
 
 fn main() {
-    let output_dir_str = &std::env::var_os("OUT_DIR").unwrap();
-    let output_dir = Path::new(&output_dir_str);
+    let out_dir = PathBuf::from(std::env::var("OUT_DIR").unwrap());
+    // Copy the prover and verifier to the root of the target directory
+    // to make them easy to find for all the crates in the workspace.
+    let target_dir = out_dir.join("../../..").canonicalize().unwrap();
 
     let stone_prover_repo_dir = Path::new("./dependencies/stone-prover");
-    build_stone_prover(stone_prover_repo_dir, output_dir);
+    build_stone_prover(stone_prover_repo_dir, target_dir.as_path());
 
     // Rerun if the submodule is updated
     println!("cargo:rerun-if-changed=../.git/modules/stone-prover/dependencies/stone-prover/HEAD");
