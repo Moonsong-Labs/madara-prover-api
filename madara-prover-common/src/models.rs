@@ -120,9 +120,19 @@ impl<'a> TryFrom<cairo_vm::air_public_input::PublicInput<'a>> for PublicInput {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
+pub struct ProofVersion {
+    commit_hash: String,
+    proof_hash: String,
+    statement_name: String,
+}
+
+#[derive(Serialize, Deserialize, Debug)]
 pub struct Proof {
-    // Note: we only map output fields for now
+    pub private_input: PrivateInput,
     pub proof_hex: String,
+    pub proof_parameters: ProverParameters,
+    pub prover_config: ProverConfig,
+    pub public_input: PublicInput,
 }
 
 #[cfg(test)]
