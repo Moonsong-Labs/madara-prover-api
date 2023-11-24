@@ -171,8 +171,10 @@ impl Prover for ProverService {
         let prover_parameters: ProverParameters = serde_json::from_str(&prover_parameters_str)
             .map_err(|_| Status::invalid_argument("Could not read prover parameters"))?;
 
-        let execution_artifacts = run_cairo_program_in_proof_mode(&program)
+        let execution_artifacts = run_cairo_program_in_proof_mode(&program);
+        let execution_artifacts = execution_artifacts
             .map_err(|e| Status::internal(format!("Failed to run program: {e}")))?;
+
         let prover_result =
             call_prover(&execution_artifacts, &prover_config, &prover_parameters).await;
 
