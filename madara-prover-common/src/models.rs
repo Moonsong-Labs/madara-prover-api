@@ -79,16 +79,6 @@ pub struct MemorySegmentAddresses {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-pub struct MemorySegments {
-    pub program: MemorySegmentAddresses,
-    pub execution: MemorySegmentAddresses,
-    pub output: MemorySegmentAddresses,
-    pub pedersen: MemorySegmentAddresses,
-    pub range_check: MemorySegmentAddresses,
-    pub ecdsa: MemorySegmentAddresses,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
 pub struct PublicMemoryEntry {
     pub address: u32,
     pub value: String,

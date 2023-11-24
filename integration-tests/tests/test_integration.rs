@@ -11,7 +11,7 @@ mod tests {
     use tonic::transport::{Endpoint, Uri};
     use tower::service_fn;
 
-    use madara_prover_rpc_client::client::{execute_program, prove_execution};
+    use madara_prover_rpc_client::client::{execute_and_prove, execute_program, prove_execution};
     use madara_prover_rpc_client::prover::prover_client::ProverClient;
     use madara_prover_rpc_server::error::ServerError;
     use madara_prover_rpc_server::{run_grpc_server, BindAddress};
@@ -86,6 +86,28 @@ mod tests {
             test_case.public_input,
             test_case.memory,
             test_case.trace,
+            test_case.prover_config,
+            test_case.prover_parameters,
+        )
+        .await;
+
+        assert!(result.is_ok(), "{:?}", result);
+
+        let proof = result.unwrap();
+        assert_eq!(proof.proof_hex, test_case.proof.proof_hex);
+    }
+
+    #[rstest]
+    #[tokio::test]
+    async fn test_execute_and_prove(
+        #[future] rpc_client_server: (RpcClient, RpcServer),
+        #[from(parsed_prover_test_case)] test_case: ParsedProverTestCase,
+    ) {
+        let (mut client, _server) = rpc_client_server.await;
+
+        let result = execute_and_prove(
+            &mut client,
+            test_case.compiled_program,
             test_case.prover_config,
             test_case.prover_parameters,
         )
