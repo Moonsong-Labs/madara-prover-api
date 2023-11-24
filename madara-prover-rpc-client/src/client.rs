@@ -1,19 +1,9 @@
-use tonic::codegen::tokio_stream::StreamExt;
-use tonic::{Status, Streaming};
+use tonic::Status;
+
+use madara_prover_common::models::{Proof, ProverConfig, ProverParameters, PublicInput};
 
 use crate::prover::prover_client::ProverClient;
 use crate::prover::{ExecutionRequest, ExecutionResponse, ProverRequest, ProverResponse};
-use madara_prover_common::models::{Proof, ProverConfig, ProverParameters, PublicInput};
-
-async fn wait_for_streamed_response<ResponseType>(
-    stream: Streaming<ResponseType>,
-) -> Result<ResponseType, Status> {
-    if let Some(response) = stream.take(1).next().await {
-        return response;
-    }
-
-    Err(Status::cancelled("server-side stream was dropped"))
-}
 
 /// Execute a program in proof mode and retrieve the execution artifacts.
 pub async fn execute_program(
@@ -25,8 +15,10 @@ pub async fn execute_program(
         prover_config: None,
         prover_parameters: None,
     });
-    let execution_stream = client.execute(request).await?.into_inner();
-    wait_for_streamed_response(execution_stream).await
+    client
+        .execute(request)
+        .await
+        .map(|response| response.into_inner())
 }
 
 fn unpack_prover_response(prover_result: Result<ProverResponse, Status>) -> Result<Proof, Status> {
@@ -57,8 +49,8 @@ pub async fn prove_execution(
         prover_config: prover_config_str,
         prover_parameters: prover_parameters_str,
     });
-    let prover_stream = client.prove(request).await?.into_inner();
-    let prover_result = wait_for_streamed_response(prover_stream).await;
+    let prover_response = client.prove(request).await;
+    let prover_result = prover_response.map(|response| response.into_inner());
     unpack_prover_response(prover_result)
 }
 

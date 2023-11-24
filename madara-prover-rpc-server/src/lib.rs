@@ -1,7 +1,6 @@
 use std::path::Path;
 
 use tokio::net::UnixListener;
-use tokio_stream::wrappers::ReceiverStream;
 use tokio_stream::wrappers::UnixListenerStream;
 use tonic::{transport::Server, Request, Response, Status};
 
@@ -93,30 +92,22 @@ pub struct ProverService {}
 
 #[tonic::async_trait]
 impl Prover for ProverService {
-    type ExecuteStream = ReceiverStream<Result<ExecutionResponse, Status>>;
-
     async fn execute(
         &self,
         request: Request<ExecutionRequest>,
-    ) -> Result<Response<Self::ExecuteStream>, Status> {
+    ) -> Result<Response<ExecutionResponse>, Status> {
         let execution_request = request.into_inner();
-        let (tx, rx) = tokio::sync::mpsc::channel(1);
 
-        tokio::spawn(async move {
-            let execution_result = run_cairo_program_in_proof_mode(&execution_request.program);
-            let execution_result = format_execution_result(execution_result);
-            let _ = tx.send(execution_result).await;
-        });
+        let execution_result = run_cairo_program_in_proof_mode(&execution_request.program);
+        let execution_result = format_execution_result(execution_result);
 
-        Ok(Response::new(ReceiverStream::new(rx)))
+        execution_result.map(Response::new)
     }
-
-    type ProveStream = ReceiverStream<Result<ProverResponse, Status>>;
 
     async fn prove(
         &self,
         request: Request<ProverRequest>,
-    ) -> Result<Response<Self::ProveStream>, Status> {
+    ) -> Result<Response<ProverResponse>, Status> {
         let ProverRequest {
             public_input: public_input_str,
             memory,
@@ -138,16 +129,11 @@ impl Prover for ProverService {
             trace,
         };
 
-        let (tx, rx) = tokio::sync::mpsc::channel(1);
+        let prover_result =
+            call_prover(&execution_artifacts, &prover_config, &prover_parameters).await;
+        let formatted_result = format_prover_result(prover_result);
 
-        tokio::spawn(async move {
-            let prover_result =
-                call_prover(&execution_artifacts, &prover_config, &prover_parameters).await;
-            let formatted_result = format_prover_result(prover_result);
-            let _ = tx.send(formatted_result).await;
-        });
-
-        Ok(Response::new(ReceiverStream::new(rx)))
+        formatted_result.map(Response::new)
     }
 
     async fn execute_and_prove(
