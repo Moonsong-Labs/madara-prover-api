@@ -55,7 +55,7 @@ pub async fn prove_cairo_program() -> Result((), Box<dyn Error>) {
 
 The project can be built and tested using `cargo`.
 
-First, clone the repository:
+First, clone the repository and its submodules:
 
 ```shell
 git clone --recursive https://github.com/Moonsong-Labs/madara-prover-api.git 
