@@ -19,11 +19,11 @@ pip install -r requirements.txt
 The script also requires you to have the Stone prover (`cpu_air_prover`) in your PATH.
 You can either follow the instructions on the [Stone prover repository](https://github.com/starkware-libs/stone-prover)
 and put the binaries somewhere on your system (ex: `/opt/stone-prover/bin`)
-or build the workspace and add `target/debug` to your PATH.
+or build the workspace and add `target/debug` (or `target/release`) to your PATH.
 
 Then, if you have a `program.cairo` file on your system, you can generate the whole test case by running the following command:
 ```shell
-python test-cases/generate_test_case \
+python test-cases/generate_test_case.py \
   program.cairo \
   [--program-input program-input.json] \
   --output-dir test-cases/cases/program
