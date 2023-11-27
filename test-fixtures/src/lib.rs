@@ -76,6 +76,10 @@ pub fn prover_cli_test_case(#[from(fibonacci)] files: ProverTestCase) -> ProverC
         pedersen: vec![],
         range_check: vec![],
         ecdsa: vec![],
+        bitwise: vec![],
+        ec_op: vec![],
+        keccak: vec![],
+        poseidon: vec![],
     };
 
     serde_json::to_writer(&private_input_file, &private_input)
