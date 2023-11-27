@@ -58,16 +58,18 @@ pub async fn prove_execution(
 pub async fn execute_and_prove(
     client: &mut ProverClient<tonic::transport::Channel>,
     program_content: Vec<u8>,
-    prover_config: ProverConfig,
-    prover_parameters: ProverParameters,
+    prover_config: Option<ProverConfig>,
+    prover_parameters: Option<ProverParameters>,
 ) -> Result<Proof, Status> {
-    let prover_config_str = serde_json::to_string(&prover_config).unwrap();
-    let prover_parameters_str = serde_json::to_string(&prover_parameters).unwrap();
+    let serialized_prover_config =
+        prover_config.map(|config| serde_json::to_string(&config).unwrap());
+    let serialized_prover_parameters =
+        prover_parameters.map(|params| serde_json::to_string(&params).unwrap());
 
     let request = ExecutionRequest {
         program: program_content,
-        prover_config: Some(prover_config_str),
-        prover_parameters: Some(prover_parameters_str),
+        prover_config: serialized_prover_config,
+        prover_parameters: serialized_prover_parameters,
     };
 
     let prover_result = client
