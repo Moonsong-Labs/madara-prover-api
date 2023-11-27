@@ -19,6 +19,7 @@ use crate::prover::{ExecutionRequest, ExecutionResponse, ProverResponse};
 
 pub mod cairo;
 pub mod error;
+mod hints;
 
 pub mod prover {
     tonic::include_proto!("prover");

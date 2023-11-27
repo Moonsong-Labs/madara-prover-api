@@ -11,6 +11,7 @@ use cairo_vm::vm::vm_core::VirtualMachine;
 use thiserror::Error;
 use tonic::Status;
 
+use crate::hints::hint_processor;
 use madara_prover_common::models::PublicInput;
 
 #[derive(Error, Debug)]
@@ -94,7 +95,7 @@ pub fn run_in_proof_mode(
         disable_trace_padding: false,
     };
 
-    let mut hint_processor = BuiltinHintProcessor::new_empty();
+    let mut hint_processor = hint_processor();
 
     cairo_run(program_content, &cairo_run_config, &mut hint_processor)
 }
