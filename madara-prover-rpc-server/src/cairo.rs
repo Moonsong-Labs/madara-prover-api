@@ -9,23 +9,53 @@ use cairo_vm::vm::errors::trace_errors::TraceError;
 use cairo_vm::vm::runners::cairo_runner::CairoRunner;
 use cairo_vm::vm::vm_core::VirtualMachine;
 use thiserror::Error;
+use tonic::Status;
 
 use madara_prover_common::models::PublicInput;
 
 #[derive(Error, Debug)]
 pub enum ExecutionError {
-    #[error("failed to run Cairo program")]
+    #[error(transparent)]
     RunFailed(#[from] CairoRunError),
-    #[error("failed to generate public input")]
+    #[error(transparent)]
     GeneratePublicInput(#[from] PublicInputError),
-    #[error("failed to generate program execution trace")]
+    #[error(transparent)]
     GenerateTrace(#[from] TraceError),
-    #[error("failed to encode the VM memory in binary format")]
+    #[error(transparent)]
     EncodeMemory(EncodeTraceError),
-    #[error("failed to encode the execution trace in binary format")]
+    #[error(transparent)]
     EncodeTrace(EncodeTraceError),
-    #[error("failed to serialize the public input")]
+    #[error(transparent)]
     SerializePublicInput(#[from] serde_json::Error),
+}
+
+impl From<ExecutionError> for Status {
+    fn from(value: ExecutionError) -> Self {
+        match value {
+            ExecutionError::RunFailed(cairo_run_error) => {
+                Status::internal(format!("Failed to run Cairo program: {}", cairo_run_error))
+            }
+            ExecutionError::GeneratePublicInput(public_input_error) => Status::internal(format!(
+                "Failed to generate public input: {}",
+                public_input_error
+            )),
+            ExecutionError::GenerateTrace(trace_error) => Status::internal(format!(
+                "Failed to generate execution trace: {}",
+                trace_error
+            )),
+            ExecutionError::EncodeMemory(encode_error) => Status::internal(format!(
+                "Failed to encode execution memory: {}",
+                encode_error
+            )),
+            ExecutionError::EncodeTrace(encode_error) => Status::internal(format!(
+                "Failed to encode execution memory: {}",
+                encode_error
+            )),
+            ExecutionError::SerializePublicInput(serde_error) => {
+                Status::internal(format!("Failed to serialize public input: {}", serde_error))
+            }
+        }
+    }
 }
 
 /// An in-memory writer for bincode encoding.

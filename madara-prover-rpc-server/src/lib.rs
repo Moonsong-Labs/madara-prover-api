@@ -44,33 +44,6 @@ async fn call_prover(
     .await
 }
 
-fn execution_error_to_status(e: ExecutionError) -> Status {
-    match e {
-        ExecutionError::RunFailed(cairo_run_error) => {
-            Status::internal(format!("Failed to run Cairo program: {}", cairo_run_error))
-        }
-        ExecutionError::GeneratePublicInput(public_input_error) => Status::internal(format!(
-            "Failed to generate public input: {}",
-            public_input_error
-        )),
-        ExecutionError::GenerateTrace(trace_error) => Status::internal(format!(
-            "Failed to generate execution trace: {}",
-            trace_error
-        )),
-        ExecutionError::EncodeMemory(encode_error) => Status::internal(format!(
-            "Failed to encode execution memory: {}",
-            encode_error
-        )),
-        ExecutionError::EncodeTrace(encode_error) => Status::internal(format!(
-            "Failed to encode execution memory: {}",
-            encode_error
-        )),
-        ExecutionError::SerializePublicInput(serde_error) => {
-            Status::internal(format!("Failed to serialize public input: {}", serde_error))
-        }
-    }
-}
-
 fn format_execution_result(
     execution_result: Result<ExecutionArtifacts, ExecutionError>,
 ) -> Result<ExecutionResponse, Status> {
@@ -82,7 +55,7 @@ fn format_execution_result(
                 trace: artifacts.trace,
             })
             .map_err(|_| Status::internal("Failed to serialize public input")),
-        Err(e) => Err(execution_error_to_status(e)),
+        Err(e) => Err(e.into()),
     }
 }
 
