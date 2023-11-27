@@ -10,7 +10,8 @@ This server is used as part of the Madara sequencer to prove the transactions in
 To prove transactions, the server relies on the [Stone prover](https://github.com/starkware-libs/stone-prover).
 
 This project is made of 3 main crates.
-`stone-prover` provides a Rust wrapper for the Stone prover. This crate allows any Rust program to call the prover.
+`stone-prover` provides a Rust wrapper for the Stone prover. It builds the prover using a `build.rs` script and provides
+a Rust library that invokes the prover as a child process behind the scenes.
 `madara-prover-rpc-server` contains the server code. This crate provides a binary and library to spawn the server. 
 `madara-prover-rpc-client` provides a client to interact with the server.
 
