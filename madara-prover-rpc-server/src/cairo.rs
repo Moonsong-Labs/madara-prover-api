@@ -3,7 +3,6 @@ use cairo_vm::air_public_input::PublicInputError;
 use cairo_vm::cairo_run::{
     cairo_run, write_encoded_memory, write_encoded_trace, CairoRunConfig, EncodeTraceError,
 };
-use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::BuiltinHintProcessor;
 use cairo_vm::vm::errors::cairo_run_errors::CairoRunError;
 use cairo_vm::vm::errors::trace_errors::TraceError;
 use cairo_vm::vm::runners::cairo_runner::CairoRunner;
@@ -11,8 +10,9 @@ use cairo_vm::vm::vm_core::VirtualMachine;
 use thiserror::Error;
 use tonic::Status;
 
-use crate::hints::hint_processor;
 use madara_prover_common::models::PublicInput;
+
+use crate::hints::hint_processor;
 
 #[derive(Error, Debug)]
 pub enum ExecutionError {
