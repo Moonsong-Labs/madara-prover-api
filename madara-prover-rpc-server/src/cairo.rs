@@ -9,21 +9,53 @@ use cairo_vm::vm::errors::trace_errors::TraceError;
 use cairo_vm::vm::runners::cairo_runner::CairoRunner;
 use cairo_vm::vm::vm_core::VirtualMachine;
 use thiserror::Error;
+use tonic::Status;
 
-use crate::prover::ExecutionResponse;
+use madara_prover_common::models::PublicInput;
 
 #[derive(Error, Debug)]
 pub enum ExecutionError {
-    #[error("failed to generate public input")]
+    #[error(transparent)]
+    RunFailed(#[from] CairoRunError),
+    #[error(transparent)]
     GeneratePublicInput(#[from] PublicInputError),
-    #[error("failed to generate program execution trace")]
+    #[error(transparent)]
     GenerateTrace(#[from] TraceError),
-    #[error("failed to encode the VM memory in binary format")]
+    #[error(transparent)]
     EncodeMemory(EncodeTraceError),
-    #[error("failed to encode the execution trace in binary format")]
+    #[error(transparent)]
     EncodeTrace(EncodeTraceError),
-    #[error("failed to serialize the public input")]
+    #[error(transparent)]
     SerializePublicInput(#[from] serde_json::Error),
+}
+
+impl From<ExecutionError> for Status {
+    fn from(value: ExecutionError) -> Self {
+        match value {
+            ExecutionError::RunFailed(cairo_run_error) => {
+                Status::internal(format!("Failed to run Cairo program: {}", cairo_run_error))
+            }
+            ExecutionError::GeneratePublicInput(public_input_error) => Status::internal(format!(
+                "Failed to generate public input: {}",
+                public_input_error
+            )),
+            ExecutionError::GenerateTrace(trace_error) => Status::internal(format!(
+                "Failed to generate execution trace: {}",
+                trace_error
+            )),
+            ExecutionError::EncodeMemory(encode_error) => Status::internal(format!(
+                "Failed to encode execution memory: {}",
+                encode_error
+            )),
+            ExecutionError::EncodeTrace(encode_error) => Status::internal(format!(
+                "Failed to encode execution memory: {}",
+                encode_error
+            )),
+            ExecutionError::SerializePublicInput(serde_error) => {
+                Status::internal(format!("Failed to serialize public input: {}", serde_error))
+            }
+        }
+    }
 }
 
 /// An in-memory writer for bincode encoding.
@@ -67,16 +99,23 @@ pub fn run_in_proof_mode(
     cairo_run(program_content, &cairo_run_config, &mut hint_processor)
 }
 
+pub struct ExecutionArtifacts {
+    pub public_input: PublicInput,
+    pub memory: Vec<u8>,
+    pub trace: Vec<u8>,
+}
+
 // TODO: split in two (extract data + format to ExecutionResponse)
 /// Extracts execution artifacts from the runner and VM (after execution).
 ///
 /// * `cairo_runner` Cairo runner object.
 /// * `vm`: Cairo VM object.
-pub fn extract_run_artifacts(
+pub fn extract_execution_artifacts(
     cairo_runner: CairoRunner,
     vm: VirtualMachine,
-) -> Result<ExecutionResponse, ExecutionError> {
+) -> Result<ExecutionArtifacts, ExecutionError> {
     let cairo_vm_public_input = cairo_runner.get_air_public_input(&vm)?;
+
     let memory = cairo_runner.relocated_memory.clone();
     let trace = vm.get_relocated_trace()?;
 
@@ -88,10 +127,10 @@ pub fn extract_run_artifacts(
     write_encoded_trace(trace, &mut trace_writer).map_err(ExecutionError::EncodeTrace)?;
     let trace_raw = trace_writer.buf;
 
-    let public_input_str = serde_json::to_string(&cairo_vm_public_input)?;
+    let public_input = PublicInput::try_from(cairo_vm_public_input)?;
 
-    Ok(ExecutionResponse {
-        public_input: public_input_str,
+    Ok(ExecutionArtifacts {
+        public_input,
         memory: memory_raw,
         trace: trace_raw,
     })
