@@ -1,13 +1,16 @@
-use cairo_vm::air_private_input::{AirPrivateInput, AirPrivateInputSerializable};
-use rstest::fixture;
 use std::collections::HashMap;
+use std::io::Read;
 use std::path::{Path, PathBuf};
-use tempfile::NamedTempFile;
 
-use test_cases::get_test_case_file_path;
+use cairo_vm::air_private_input::{AirPrivateInput, AirPrivateInputSerializable};
+use cairo_vm::vm::runners::builtin_runner::OUTPUT_BUILTIN_NAME;
+use cairo_vm::Felt252;
+use rstest::fixture;
+use tempfile::NamedTempFile;
 
 use madara_prover_common::models::{Proof, ProverConfig, ProverParameters, PublicInput};
 use madara_prover_common::toolkit::read_json_from_file;
+use test_cases::get_test_case_file_path;
 
 #[fixture]
 pub fn prover_in_path() {
@@ -133,4 +136,76 @@ pub fn parsed_prover_test_case(#[from(fibonacci)] files: ProverTestCase) -> Pars
         prover_parameters,
         proof,
     }
+}
+
+/// Reads a memory file as (address, value) pairs.
+pub fn read_memory_pairs<R: Read>(
+    mut reader: R,
+    addr_size: usize,
+    felt_size: usize,
+) -> Vec<(u64, Felt252)> {
+    let pair_size = addr_size + felt_size;
+    let mut memory = Vec::<(u64, Felt252)>::new();
+
+    loop {
+        let mut element = Vec::with_capacity(pair_size);
+        let n = reader
+            .by_ref()
+            .take(pair_size as u64)
+            .read_to_end(&mut element)
+            .unwrap();
+        if n == 0 {
+            break;
+        }
+        assert_eq!(n, pair_size);
+
+        let (address_bytes, value_bytes) = element.split_at(addr_size);
+        let address = {
+            let mut value = 0;
+            for (index, byte) in address_bytes[..8].iter().enumerate() {
+                value += u64::from(*byte) << (index * 8);
+            }
+            value
+        };
+        let value = Felt252::from_bytes_le_slice(value_bytes);
+        memory.push((address, value));
+    }
+
+    memory
+}
+
+/// Converts a vector of (address, value) pairs to a hashmap. Panics if a key appears more than once.
+fn memory_pairs_to_hashmap(pairs: Vec<(u64, Felt252)>) -> HashMap<u64, Felt252> {
+    let mut map = HashMap::new();
+
+    for (address, value) in pairs.into_iter() {
+        assert!(!map.contains_key(&address));
+        map.insert(address, value);
+    }
+
+    map
+}
+
+/// Checks that the two specified memory files describe the same memory, regardless of the Python vs Rust VM formats.
+pub fn assert_memory_eq(actual: &Vec<u8>, expected: &Vec<u8>) {
+    assert_eq!(actual.len() % 40, 0);
+    assert_eq!(expected.len() % 40, 0);
+
+    let actual_memory_pairs = read_memory_pairs(actual.as_slice(), 8, 32);
+    let expected_memory_pairs = read_memory_pairs(expected.as_slice(), 8, 32);
+
+    let actual_memory = memory_pairs_to_hashmap(actual_memory_pairs);
+    let expected_memory = memory_pairs_to_hashmap(expected_memory_pairs);
+
+    assert_eq!(actual_memory, expected_memory);
+}
+
+pub fn assert_private_input_eq(actual: AirPrivateInput, expected: AirPrivateInput) {
+    let actual_map = {
+        let mut map = actual.0;
+        map.remove(OUTPUT_BUILTIN_NAME);
+        map
+    };
+
+    assert_eq!(actual_map, expected.0);
 }
