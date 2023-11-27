@@ -14,7 +14,7 @@ This project is made of 3 main crates.
 `madara-prover-rpc-server` contains the server code. This crate provides a binary and library to spawn the server. 
 `madara-prover-rpc-client` provides a client to interact with the server.
 
-The client and server communicate using gRPC. 
+The client and server communicate using [gRPC](https://grpc.io/). 
 You can find the protocol description in `protocols/prover.proto`.
 
 ## Usage
