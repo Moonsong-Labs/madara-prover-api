@@ -17,7 +17,7 @@ use crate::error::ServerError;
 use crate::prover::prover_server::{Prover, ProverServer};
 use crate::prover::{ExecutionRequest, ExecutionResponse, ProverResponse};
 
-mod cairo;
+pub mod cairo;
 pub mod error;
 
 pub mod prover {
