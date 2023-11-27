@@ -98,18 +98,29 @@ mod tests {
     }
 
     #[rstest]
+    #[case(false)]
+    #[case(true)]
     #[tokio::test]
     async fn test_execute_and_prove(
         #[future] rpc_client_server: (RpcClient, RpcServer),
         #[from(parsed_prover_test_case)] test_case: ParsedProverTestCase,
+        #[case] provide_prover_config_and_parameters: bool,
     ) {
         let (mut client, _server) = rpc_client_server.await;
+
+        let (prover_config, prover_parameters) = match provide_prover_config_and_parameters {
+            true => (
+                Some(test_case.prover_config),
+                Some(test_case.prover_parameters),
+            ),
+            false => (None, None),
+        };
 
         let result = execute_and_prove(
             &mut client,
             test_case.compiled_program,
-            test_case.prover_config,
-            test_case.prover_parameters,
+            prover_config,
+            prover_parameters,
         )
         .await;
 

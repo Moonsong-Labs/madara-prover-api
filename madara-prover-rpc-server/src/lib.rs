@@ -7,6 +7,7 @@ use tonic::{transport::Server, Request, Response, Status};
 use madara_prover_common::models::{Proof, ProverConfig, ProverParameters};
 use prover::ProverRequest;
 use stone_prover::error::ProverError;
+use stone_prover::fri::generate_prover_parameters;
 use stone_prover::prover::run_prover_async;
 
 use crate::cairo::{
@@ -114,6 +115,31 @@ fn format_prover_result(
     }
 }
 
+fn get_prover_config(user_provided_config: Option<String>) -> Result<ProverConfig, Status> {
+    if let Some(config_str) = user_provided_config {
+        return serde_json::from_str(&config_str)
+            .map_err(|_| Status::invalid_argument("Could not read prover config"));
+    }
+
+    Ok(ProverConfig::default())
+}
+
+fn get_prover_parameters(
+    user_provided_parameters: Option<String>,
+    nb_steps: u32,
+) -> Result<ProverParameters, Status> {
+    if let Some(params_str) = user_provided_parameters {
+        return serde_json::from_str(&params_str)
+            .map_err(|_| Status::invalid_argument("Could not read prover parameters"));
+    }
+
+    let last_layer_degree_bound = 64;
+    Ok(generate_prover_parameters(
+        nb_steps,
+        last_layer_degree_bound,
+    ))
+}
+
 #[derive(Debug, Default)]
 pub struct ProverService {}
 
@@ -173,20 +199,16 @@ impl Prover for ProverService {
             prover_parameters: prover_parameters_str,
         } = request.into_inner();
 
-        let prover_config_str = prover_config_str.ok_or(Status::unimplemented(
-            "Prover config cannot be automatically generated yet",
-        ))?;
-        let prover_parameters_str = prover_parameters_str.ok_or(Status::unimplemented(
-            "Prover parameters cannot be automatically generated yet",
-        ))?;
-        let prover_config: ProverConfig = serde_json::from_str(&prover_config_str)
-            .map_err(|_| Status::invalid_argument("Could not read prover config"))?;
-        let prover_parameters: ProverParameters = serde_json::from_str(&prover_parameters_str)
-            .map_err(|_| Status::invalid_argument("Could not read prover parameters"))?;
+        let prover_config = get_prover_config(prover_config_str)?;
 
         let execution_artifacts = run_cairo_program_in_proof_mode(&program);
         let execution_artifacts = execution_artifacts
             .map_err(|e| Status::internal(format!("Failed to run program: {e}")))?;
+
+        let prover_parameters = get_prover_parameters(
+            prover_parameters_str,
+            execution_artifacts.public_input.n_steps,
+        )?;
 
         let prover_result =
             call_prover(&execution_artifacts, &prover_config, &prover_parameters).await;

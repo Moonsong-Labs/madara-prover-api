@@ -17,18 +17,32 @@ pub struct ProverConfig {
     pub table_prover_n_tasks_per_segment: i32,
 }
 
+impl Default for ProverConfig {
+    fn default() -> Self {
+        Self {
+            cached_lde_config: CachedLdeConfig {
+                store_full_lde: false,
+                use_fft_for_eval: false,
+            },
+            constraint_polynomial_task_size: 256,
+            n_out_of_memory_merkle_layers: 1,
+            table_prover_n_tasks_per_segment: 32,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct FriParameters {
-    fri_step_list: Vec<u32>,
-    last_layer_degree_bound: u32,
-    n_queries: u32,
-    proof_of_work_bits: u32,
+    pub fri_step_list: Vec<u32>,
+    pub last_layer_degree_bound: u32,
+    pub n_queries: u32,
+    pub proof_of_work_bits: u32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct StarkParameters {
-    fri: FriParameters,
-    log_n_cosets: i32,
+    pub fri: FriParameters,
+    pub log_n_cosets: i32,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
