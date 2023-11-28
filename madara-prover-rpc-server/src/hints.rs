@@ -134,6 +134,9 @@ fn prepare_simple_bootloader_output_segment(
     ap_tracking: &ApTracking,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
+    let new_segment_base = vm.add_memory_segment();
+    let new_output_builtin = OutputBuiltinRunner::new(true).initialize_segments(&mut vm.segments);
+
     // ids.simple_bootloader_output_start = segments.add()
     // let new_output_builtin = OutputBuiltinRunner::new(true).initialize_segments(&mut vm.seg);
 
