@@ -3,7 +3,6 @@ use cairo_vm::air_public_input::PublicInputError;
 use cairo_vm::cairo_run::{
     cairo_run, write_encoded_memory, write_encoded_trace, CairoRunConfig, EncodeTraceError,
 };
-use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::BuiltinHintProcessor;
 use cairo_vm::vm::errors::cairo_run_errors::CairoRunError;
 use cairo_vm::vm::errors::trace_errors::TraceError;
 use cairo_vm::vm::runners::cairo_runner::CairoRunner;
@@ -12,6 +11,8 @@ use thiserror::Error;
 use tonic::Status;
 
 use madara_prover_common::models::PublicInput;
+
+use crate::hints::hint_processor;
 
 #[derive(Error, Debug)]
 pub enum ExecutionError {
@@ -59,15 +60,17 @@ impl From<ExecutionError> for Status {
 }
 
 /// An in-memory writer for bincode encoding.
+#[derive(Default)]
 pub struct MemWriter {
     pub buf: Vec<u8>,
 }
 
 impl MemWriter {
     pub fn new() -> Self {
-        Self { buf: vec![] }
+        Self::default()
     }
 }
+
 impl bincode::enc::write::Writer for MemWriter {
     fn write(&mut self, bytes: &[u8]) -> Result<(), EncodeError> {
         self.buf.extend_from_slice(bytes);
@@ -94,7 +97,7 @@ pub fn run_in_proof_mode(
         disable_trace_padding: false,
     };
 
-    let mut hint_processor = BuiltinHintProcessor::new_empty();
+    let mut hint_processor = hint_processor();
 
     cairo_run(program_content, &cairo_run_config, &mut hint_processor)
 }
