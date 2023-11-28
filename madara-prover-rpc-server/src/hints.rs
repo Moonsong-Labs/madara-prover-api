@@ -119,7 +119,7 @@ fn save_output_pointer_hint(
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
     let output_ptr = ids_data.get("output_ptr")
-        .ok_or(HintError::CustomHint("output_ptr unavailable".to_owned().into_boxed_str()))?
+        .ok_or(HintError::UnknownIdentifier("output_ptr".to_owned().into_boxed_str()))?
         .clone();
     exec_scopes.insert_value("output_start", output_ptr);
     Ok(())
