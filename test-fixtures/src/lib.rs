@@ -29,6 +29,8 @@ pub fn read_proof_file<P: AsRef<Path>>(proof_file: P) -> Proof {
 
 /// All the files forming a complete prover test case.
 pub struct ProverTestCase {
+    pub program_file: PathBuf,
+    pub compiled_program_file: PathBuf,
     pub public_input_file: PathBuf,
     pub prover_config_file: PathBuf,
     pub prover_parameter_file: PathBuf,
@@ -39,6 +41,8 @@ pub struct ProverTestCase {
 
 #[fixture]
 pub fn fibonacci() -> ProverTestCase {
+    let program_file = get_test_case_file_path("fibonacci/fibonacci.cairo");
+    let compiled_program_file = get_test_case_file_path("fibonacci/fibonacci_compiled.json");
     let public_input_file = get_test_case_file_path("fibonacci/fibonacci_public_input.json");
     let prover_config_file = get_test_case_file_path("fibonacci/cpu_air_prover_config.json");
     let prover_parameter_file = get_test_case_file_path("fibonacci/cpu_air_params.json");
@@ -47,6 +51,8 @@ pub fn fibonacci() -> ProverTestCase {
     let proof_file = get_test_case_file_path("fibonacci/fibonacci_proof.json");
 
     ProverTestCase {
+        program_file,
+        compiled_program_file,
         public_input_file,
         prover_config_file,
         prover_parameter_file,
@@ -97,6 +103,7 @@ pub fn prover_cli_test_case(#[from(fibonacci)] files: ProverTestCase) -> ProverC
 }
 
 pub struct ParsedProverTestCase {
+    pub compiled_program: Vec<u8>,
     pub public_input: PublicInput,
     pub memory: Vec<u8>,
     pub trace: Vec<u8>,
@@ -107,6 +114,7 @@ pub struct ParsedProverTestCase {
 
 #[fixture]
 pub fn parsed_prover_test_case(#[from(fibonacci)] files: ProverTestCase) -> ParsedProverTestCase {
+    let compiled_program = std::fs::read(files.compiled_program_file).unwrap();
     let public_input: PublicInput = read_json_from_file(files.public_input_file).unwrap();
     let prover_config: ProverConfig = read_json_from_file(files.prover_config_file).unwrap();
     let prover_parameters: ProverParameters =
@@ -117,6 +125,7 @@ pub fn parsed_prover_test_case(#[from(fibonacci)] files: ProverTestCase) -> Pars
     let proof = read_proof_file(&files.proof_file);
 
     ParsedProverTestCase {
+        compiled_program,
         public_input,
         memory,
         trace,
