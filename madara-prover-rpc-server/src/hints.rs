@@ -15,17 +15,6 @@ use cairo_vm::vm::runners::builtin_runner::{BuiltinRunner, OutputBuiltinRunner};
 use cairo_vm::vm::vm_core::VirtualMachine;
 use serde::Deserialize;
 
-const PREPARE_SIMPLE_BOOTLOADER_OUTPUT_SEGMENT: &str =
-    "from starkware.cairo.bootloaders.bootloader.objects import BootloaderInput
-bootloader_input = BootloaderInput.Schema().load(program_input)
-
-ids.simple_bootloader_output_start = segments.add()
-
-# Change output builtin state to a different segment in preparation for calling the
-# simple bootloader.
-output_builtin_state = output_builtin.get_state()
-output_builtin.new_state(base=ids.simple_bootloader_output_start)";
-
 const PREPARE_SIMPLE_BOOTLOADER_INPUT: &str = "simple_bootloader_input = bootloader_input";
 
 const RESTORE_BOOTLOADER_OUTPUT: &str = "# Restore the bootloader's output builtin state.
@@ -135,7 +124,7 @@ fn prepare_simple_bootloader_output_segment(
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
     let new_segment_base = vm.add_memory_segment();
-    let new_output_builtin = OutputBuiltinRunner::new(true).initialize_segments(&mut vm.segments);
+    // let new_output_builtin = OutputBuiltinRunner::new(true).initialize_segments(&mut vm.segments);
 
     // ids.simple_bootloader_output_start = segments.add()
     // let new_output_builtin = OutputBuiltinRunner::new(true).initialize_segments(&mut vm.seg);
@@ -172,13 +161,6 @@ pub fn hint_processor() -> BuiltinHintProcessor {
     let mut hint_processor = BuiltinHintProcessor::new_empty();
 
     let unimplemented_hint = Rc::new(HintFunc(Box::new(unimplemented_hint)));
-
-    let prepare_simple_bootloader_output_segment_hint =
-        HintFunc(Box::new(prepare_simple_bootloader_output_segment));
-    hint_processor.add_hint(
-        PREPARE_SIMPLE_BOOTLOADER_OUTPUT_SEGMENT.to_string(),
-        Rc::new(prepare_simple_bootloader_output_segment_hint),
-    );
 
     hint_processor.add_hint(
         PREPARE_SIMPLE_BOOTLOADER_INPUT.to_string(),
