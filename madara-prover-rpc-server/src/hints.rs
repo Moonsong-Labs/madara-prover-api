@@ -105,6 +105,26 @@ fn unimplemented_hint(
     Ok(())
 }
 
+/*
+Implements hint:
+%{
+    output_start = ids.output_ptr
+%}
+*/
+fn save_output_pointer_hint(
+    _vm: &mut VirtualMachine,
+    exec_scopes: &mut ExecutionScopes,
+    ids_data: &HashMap<String, HintReference>,
+    _ap_tracking: &ApTracking,
+    _constants: &HashMap<String, Felt252>,
+) -> Result<(), HintError> {
+    let output_ptr = ids_data.get("output_ptr")
+        .ok_or(HintError::UnknownIdentifier("output_ptr".to_owned().into_boxed_str()))?
+        .clone();
+    exec_scopes.insert_value("output_start", output_ptr);
+    Ok(())
+}
+
 pub fn hint_processor() -> BuiltinHintProcessor {
     let mut hint_processor = BuiltinHintProcessor::new_empty();
 
@@ -126,7 +146,9 @@ pub fn hint_processor() -> BuiltinHintProcessor {
         LOAD_BOOTLOADER_CONFIG.to_string(),
         unimplemented_hint.clone(),
     );
-    hint_processor.add_hint(SAVE_OUTPUT_POINTER.to_string(), unimplemented_hint.clone());
+    hint_processor.add_hint(
+        SAVE_OUTPUT_POINTER.to_string(),
+        Rc::new(HintFunc(Box::new(save_output_pointer_hint))));
     hint_processor.add_hint(SAVE_PACKED_OUTPUTS.to_string(), unimplemented_hint.clone());
     hint_processor.add_hint(
         COMPUTE_FACT_TOPOLOGIES.to_string(),
