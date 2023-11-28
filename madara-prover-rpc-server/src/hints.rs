@@ -73,7 +73,8 @@ fn prepare_simple_bootloader_output_segment(
     ap_tracking: &ApTracking,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    let output_builtin = get_output_builtin(vm)?;
+    // ids.simple_bootloader_output_start = segments.add()
+    // let new_output_builtin = OutputBuiltinRunner::new(true).initialize_segments(&mut vm.seg);
 
     let new_segment_base = vm.add_memory_segment();
     insert_value_from_var_name(
@@ -83,6 +84,12 @@ fn prepare_simple_bootloader_output_segment(
         ids_data,
         ap_tracking,
     )?;
+
+    // output_builtin_state = output_builtin.get_state()
+    // output_builtin.new_state(base=ids.simple_bootloader_output_start)
+    let output_builtin = get_output_builtin(vm)?;
+    println!("{:?}", output_builtin);
+    // let new_output_builtin = OutputBuiltinRunner::n
 
     Ok(())
 }
