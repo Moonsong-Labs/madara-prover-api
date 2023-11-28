@@ -148,7 +148,7 @@ pub fn hint_processor() -> BuiltinHintProcessor {
     );
     hint_processor.add_hint(
         SAVE_OUTPUT_POINTER.to_string(),
-        Rc::new(HintFunc(Box::new(save_output_pointer_hint.clone()))));
+        Rc::new(HintFunc(Box::new(save_output_pointer_hint))));
     hint_processor.add_hint(SAVE_PACKED_OUTPUTS.to_string(), unimplemented_hint.clone());
     hint_processor.add_hint(
         COMPUTE_FACT_TOPOLOGIES.to_string(),
