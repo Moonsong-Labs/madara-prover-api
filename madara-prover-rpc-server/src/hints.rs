@@ -125,6 +125,25 @@ fn save_output_pointer_hint(
     Ok(())
 }
 
+/*
+Implements hint:
+%{
+    packed_outputs = bootloader_input.packed_outputs
+%}
+*/
+fn save_packed_outputs_hint(
+    _vm: &mut VirtualMachine,
+    exec_scopes: &mut ExecutionScopes,
+    _ids_data: &HashMap<String, HintReference>,
+    _ap_tracking: &ApTracking,
+    _constants: &HashMap<String, Felt252>,
+) -> Result<(), HintError> {
+    let bootloader_input = exec_scopes.get("bootloader_input")?;
+    let packed_outputs = bootloader_input; // TODO: need type for bootloader_input / query its packed_outputs field
+    exec_scopes.insert_value("packed_outputs", packed_outputs);
+    Ok(())
+}
+
 pub fn hint_processor() -> BuiltinHintProcessor {
     let mut hint_processor = BuiltinHintProcessor::new_empty();
 
@@ -149,7 +168,10 @@ pub fn hint_processor() -> BuiltinHintProcessor {
     hint_processor.add_hint(
         SAVE_OUTPUT_POINTER.to_string(),
         Rc::new(HintFunc(Box::new(save_output_pointer_hint))));
-    hint_processor.add_hint(SAVE_PACKED_OUTPUTS.to_string(), unimplemented_hint.clone());
+    hint_processor.add_hint(
+        SAVE_PACKED_OUTPUTS.to_string(),
+        Rc::new(HintFunc(Box::new(save_packed_outputs_hint)))
+    );
     hint_processor.add_hint(
         COMPUTE_FACT_TOPOLOGIES.to_string(),
         unimplemented_hint.clone(),
