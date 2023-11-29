@@ -167,7 +167,8 @@ pub fn hint_processor() -> BuiltinHintProcessor {
     );
     hint_processor.add_hint(
         SAVE_OUTPUT_POINTER.to_string(),
-        Rc::new(HintFunc(Box::new(save_output_pointer_hint))));
+        Rc::new(HintFunc(Box::new(save_output_pointer_hint)))
+    );
     hint_processor.add_hint(
         SAVE_PACKED_OUTPUTS.to_string(),
         Rc::new(HintFunc(Box::new(save_packed_outputs_hint)))
