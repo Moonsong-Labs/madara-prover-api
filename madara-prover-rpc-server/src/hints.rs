@@ -2,13 +2,17 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use cairo_vm::felt::Felt252;
-use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::get_ptr_from_var_name;
+use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
+    get_ptr_from_var_name,
+    insert_value_from_var_name,
+};
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
     BuiltinHintProcessor, HintFunc,
 };
 use cairo_vm::hint_processor::hint_processor_definition::HintReference;
 use cairo_vm::serde::deserialize_program::ApTracking;
 use cairo_vm::types::exec_scope::ExecutionScopes;
+use cairo_vm::types::relocatable::Relocatable;
 use cairo_vm::vm::errors::hint_errors::HintError;
 use cairo_vm::vm::vm_core::VirtualMachine;
 
@@ -171,19 +175,17 @@ Implements hint:
 %}
 */
 fn guess_pre_image_of_subtasks_output_hash_hint(
-    _vm: &mut VirtualMachine,
+    vm: &mut VirtualMachine,
     exec_scopes: &mut ExecutionScopes,
     ids_data: &HashMap<String, HintReference>,
-    _ap_tracking: &ApTracking,
+    ap_tracking: &ApTracking,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    let packed_outputs = exec_scopes.get("packed_outputs")?;
+    let packed_outputs = exec_scopes.get::<Relocatable>("packed_outputs")?;
     let data = packed_outputs; // TODO: need type for packed_output / call its elements_for_hash() fn
-    let data_len = 0u32; // TODO: should be length of data
-
-    // TODO: this requires ids_data to be &mut (unless I'm missing something)
-    // ids_data.insert("nested_subtasks_output_len".to_owned(), HintReference::new_simple(data_len as i32));
-    // ids_data.insert("nested_subtasks_output".to_owned(), data);
+    let data_len = 0usize; // TODO: should be length of data
+    insert_value_from_var_name( "nested_subtasks_output_len", data_len, vm, ids_data, ap_tracking)?;
+    insert_value_from_var_name( "nested_subtasks_output", &data, vm, ids_data, ap_tracking)?;
     Ok(())
 }
 
