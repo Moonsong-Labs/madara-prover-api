@@ -144,6 +144,25 @@ fn save_packed_outputs_hint(
     Ok(())
 }
 
+/*
+Implements hint:
+%{
+    packed_outputs = packed_output.subtasks
+%}
+*/
+fn set_packed_output_to_subtasks_hint(
+    _vm: &mut VirtualMachine,
+    exec_scopes: &mut ExecutionScopes,
+    _ids_data: &HashMap<String, HintReference>,
+    _ap_tracking: &ApTracking,
+    _constants: &HashMap<String, Felt252>,
+) -> Result<(), HintError> {
+    let packed_outputs = exec_scopes.get("packed_outputs")?;
+    let subtasks = packed_outputs; // TODO: need type for packed_output / query its subtasks field
+    exec_scopes.insert_value("packed_outputs", subtasks);
+    Ok(())
+}
+
 pub fn hint_processor() -> BuiltinHintProcessor {
     let mut hint_processor = BuiltinHintProcessor::new_empty();
 
@@ -199,7 +218,8 @@ pub fn hint_processor() -> BuiltinHintProcessor {
     );
     hint_processor.add_hint(
         SET_PACKED_OUTPUT_TO_SUBTASKS.to_string(),
-        unimplemented_hint.clone(),
+        Rc::new(HintFunc(Box::new(set_packed_output_to_subtasks_hint)))
+
     );
 
     hint_processor
