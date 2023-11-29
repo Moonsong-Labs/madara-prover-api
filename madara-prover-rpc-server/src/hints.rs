@@ -163,6 +163,31 @@ fn set_packed_output_to_subtasks_hint(
     Ok(())
 }
 
+/*
+Implements hint:
+%{
+    data = packed_output.elements_for_hash()
+    ids.nested_subtasks_output_len = len(data)
+    ids.nested_subtasks_output = segments.gen_arg(data)";
+%}
+*/
+fn guess_pre_image_of_subtasks_output_hash_hint(
+    _vm: &mut VirtualMachine,
+    exec_scopes: &mut ExecutionScopes,
+    ids_data: &HashMap<String, HintReference>,
+    _ap_tracking: &ApTracking,
+    _constants: &HashMap<String, Felt252>,
+) -> Result<(), HintError> {
+    let packed_outputs = exec_scopes.get("packed_outputs")?;
+    let data = packed_outputs; // TODO: need type for packed_output / call its elements_for_hash() fn
+    let data_len = 0u32; // TODO: should be length of data
+
+    // TODO: this requires ids_data to be &mut (unless I'm missing something)
+    // ids_data.insert("nested_subtasks_output_len".to_owned(), HintReference::new_simple(data_len as i32));
+    // ids_data.insert("nested_subtasks_output".to_owned(), data);
+    Ok(())
+}
+
 pub fn hint_processor() -> BuiltinHintProcessor {
     let mut hint_processor = BuiltinHintProcessor::new_empty();
 
@@ -214,7 +239,7 @@ pub fn hint_processor() -> BuiltinHintProcessor {
     );
     hint_processor.add_hint(
         GUESS_PRE_IMAGE_OF_SUBTASKS_OUTPUT_HASH.to_string(),
-        unimplemented_hint.clone(),
+        Rc::new(HintFunc(Box::new(guess_pre_image_of_subtasks_output_hash_hint)))
     );
     hint_processor.add_hint(
         SET_PACKED_OUTPUT_TO_SUBTASKS.to_string(),
