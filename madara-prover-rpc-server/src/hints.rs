@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use cairo_vm::felt::Felt252;
+use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::get_ptr_from_var_name;
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
     BuiltinHintProcessor, HintFunc,
 };
@@ -112,15 +113,13 @@ Implements hint:
 %}
 */
 fn save_output_pointer_hint(
-    _vm: &mut VirtualMachine,
+    vm: &mut VirtualMachine,
     exec_scopes: &mut ExecutionScopes,
     ids_data: &HashMap<String, HintReference>,
-    _ap_tracking: &ApTracking,
+    ap_tracking: &ApTracking,
     _constants: &HashMap<String, Felt252>,
 ) -> Result<(), HintError> {
-    let output_ptr = ids_data.get("output_ptr")
-        .ok_or(HintError::UnknownIdentifier("output_ptr".to_owned().into_boxed_str()))?
-        .clone();
+    let output_ptr = get_ptr_from_var_name("output_ptr", vm, ids_data, ap_tracking)?;
     exec_scopes.insert_value("output_start", output_ptr);
     Ok(())
 }
