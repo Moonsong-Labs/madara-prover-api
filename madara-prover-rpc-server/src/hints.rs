@@ -2,12 +2,11 @@ use std::collections::HashMap;
 use std::rc::Rc;
 
 use cairo_vm::felt::Felt252;
-use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
-    get_ptr_from_var_name,
-    insert_value_from_var_name,
-};
 use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::{
     BuiltinHintProcessor, HintFunc,
+};
+use cairo_vm::hint_processor::builtin_hint_processor::hint_utils::{
+    get_ptr_from_var_name, insert_value_from_var_name,
 };
 use cairo_vm::hint_processor::hint_processor_definition::HintReference;
 use cairo_vm::serde::deserialize_program::ApTracking;
@@ -184,8 +183,14 @@ fn guess_pre_image_of_subtasks_output_hash_hint(
     let packed_outputs = exec_scopes.get::<Relocatable>("packed_outputs")?;
     let data = packed_outputs; // TODO: need type for packed_output / call its elements_for_hash() fn
     let data_len = 0usize; // TODO: should be length of data
-    insert_value_from_var_name( "nested_subtasks_output_len", data_len, vm, ids_data, ap_tracking)?;
-    insert_value_from_var_name( "nested_subtasks_output", &data, vm, ids_data, ap_tracking)?;
+    insert_value_from_var_name(
+        "nested_subtasks_output_len",
+        data_len,
+        vm,
+        ids_data,
+        ap_tracking,
+    )?;
+    insert_value_from_var_name("nested_subtasks_output", &data, vm, ids_data, ap_tracking)?;
     Ok(())
 }
 
@@ -212,11 +217,11 @@ pub fn hint_processor() -> BuiltinHintProcessor {
     );
     hint_processor.add_hint(
         SAVE_OUTPUT_POINTER.to_string(),
-        Rc::new(HintFunc(Box::new(save_output_pointer_hint)))
+        Rc::new(HintFunc(Box::new(save_output_pointer_hint))),
     );
     hint_processor.add_hint(
         SAVE_PACKED_OUTPUTS.to_string(),
-        Rc::new(HintFunc(Box::new(save_packed_outputs_hint)))
+        Rc::new(HintFunc(Box::new(save_packed_outputs_hint))),
     );
     hint_processor.add_hint(
         COMPUTE_FACT_TOPOLOGIES.to_string(),
@@ -240,12 +245,13 @@ pub fn hint_processor() -> BuiltinHintProcessor {
     );
     hint_processor.add_hint(
         GUESS_PRE_IMAGE_OF_SUBTASKS_OUTPUT_HASH.to_string(),
-        Rc::new(HintFunc(Box::new(guess_pre_image_of_subtasks_output_hash_hint)))
+        Rc::new(HintFunc(Box::new(
+            guess_pre_image_of_subtasks_output_hash_hint,
+        ))),
     );
     hint_processor.add_hint(
         SET_PACKED_OUTPUT_TO_SUBTASKS.to_string(),
-        Rc::new(HintFunc(Box::new(set_packed_output_to_subtasks_hint)))
-
+        Rc::new(HintFunc(Box::new(set_packed_output_to_subtasks_hint))),
     );
 
     hint_processor
