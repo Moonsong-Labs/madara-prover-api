@@ -15,6 +15,7 @@ mod tests {
     use cairo_vm::vm::vm_core::VirtualMachine;
     use std::any::Any;
     use std::collections::HashMap;
+    use std::path::Path;
     use test_cases::load_test_case_file;
 
     // Copied from cairo_run.rs and adapted to support injecting the bootloader input.
@@ -69,7 +70,7 @@ mod tests {
 
     pub fn run_bootloader_in_proof_mode(
         bootloader_content: &[u8],
-        program_content: &[u8],
+        tasks: Vec<TaskSpec>,
     ) -> Result<(CairoRunner, VirtualMachine), CairoRunError> {
         let proof_mode = true;
         let layout = "starknet_with_keccak";
@@ -84,21 +85,19 @@ mod tests {
             disable_trace_padding: false,
         };
 
-        let program = Program::from_bytes(program_content, Some("main")).unwrap();
+        let n_tasks = tasks.len();
 
         let bootloader_input = BootloaderInput {
             simple_bootloader_input: SimpleBootloaderInput {
                 fact_topologies_path: None,
                 single_page: false,
-                tasks: vec![TaskSpec {
-                    task: Task::Program(program),
-                }],
+                tasks,
             },
             bootloader_config: BootloaderConfig {
                 simple_bootloader_program_hash: Felt252::from(0),
                 supported_cairo_verifier_program_hashes: vec![],
             },
-            packed_outputs: vec![PackedOutput::Plain(vec![])],
+            packed_outputs: vec![PackedOutput::Plain(vec![]); n_tasks],
         };
 
         let mut hint_processor = BuiltinHintProcessor::new_empty();
@@ -117,13 +116,44 @@ mod tests {
 
     #[test]
     // TODO: the goal of milestone 2 is to remove this line!
-    #[should_panic]
+    // #[should_panic]
     fn test_run_bootloader() {
         let bootloader_program = load_test_case_file("bootloader/bootloader_compiled.json");
-        let fibonacci_program = load_test_case_file("fibonacci/fibonacci_compiled.json");
-        let _result = run_bootloader_in_proof_mode(
-            bootloader_program.as_bytes(),
-            fibonacci_program.as_bytes(),
+        // let program_content = load_test_case_file("fibonacci/fibonacci_compiled.json");
+        let program_content = load_test_case_file("hello-world/hello_world_compiled.json");
+        let program_content = std::fs::read_to_string(Path::new(
+            "../../starkware/cairo-vm/cairo_programs/fibonacci.json",
+        ))
+        .expect("Failed to read the fixture file");
+
+        let program = Program::from_bytes(program_content.as_bytes(), Some("main")).unwrap();
+        let tasks = vec![TaskSpec {
+            task: Task::Program(program),
+        }];
+
+        let _result = run_bootloader_in_proof_mode(bootloader_program.as_bytes(), tasks).unwrap();
+    }
+
+    #[test]
+    fn test_sanity_check() {
+        let cairo_run_config = CairoRunConfig {
+            entrypoint: "main",
+            trace_enabled: true,
+            relocate_mem: true,
+            layout: "starknet_with_keccak",
+            proof_mode: true,
+            secure_run: None,
+            disable_trace_padding: false,
+        };
+
+        let program_content = load_test_case_file("fibonacci/fibonacci_compiled.json");
+        let mut hint_processor = BuiltinHintProcessor::new_empty();
+
+        cairo_run(
+            program_content.as_bytes(),
+            &cairo_run_config,
+            &mut hint_processor,
+            HashMap::new(),
         )
         .unwrap();
     }
