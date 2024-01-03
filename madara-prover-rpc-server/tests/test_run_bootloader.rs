@@ -1,7 +1,6 @@
 #[cfg(test)]
 mod tests {
     use cairo_vm::cairo_run::CairoRunConfig;
-    use cairo_vm::felt::Felt252;
     use cairo_vm::hint_processor::builtin_hint_processor::bootloader::types::{
         BootloaderConfig, BootloaderInput, PackedOutput, SimpleBootloaderInput, Task, TaskSpec,
     };
@@ -10,9 +9,12 @@ mod tests {
     use cairo_vm::types::program::Program;
     use cairo_vm::vm::errors::cairo_run_errors::CairoRunError;
     use cairo_vm::vm::errors::vm_exception::VmException;
+    use cairo_vm::vm::runners::cairo_pie::CairoPie;
     use cairo_vm::vm::runners::cairo_runner::CairoRunner;
     use cairo_vm::vm::security::verify_secure_runner;
     use cairo_vm::vm::vm_core::VirtualMachine;
+    use cairo_vm::Felt252;
+    use madara_prover_rpc_server::cairo::extract_execution_artifacts;
     use std::any::Any;
     use std::collections::HashMap;
     use std::path::Path;
@@ -115,12 +117,10 @@ mod tests {
     }
 
     #[test]
-    // TODO: the goal of milestone 2 is to remove this line!
-    // #[should_panic]
-    fn test_run_bootloader() {
+    fn test_program() {
         let bootloader_program = load_test_case_file("bootloader/bootloader_compiled.json");
         // let program_content = load_test_case_file("fibonacci/fibonacci_compiled.json");
-        let program_content = load_test_case_file("hello-world/hello_world_compiled.json");
+        // let program_content = load_test_case_file("hello-world/hello_world_compiled.json");
         let program_content = std::fs::read_to_string(Path::new(
             "../../starkware/cairo-vm/cairo_programs/fibonacci.json",
         ))
@@ -131,7 +131,29 @@ mod tests {
             task: Task::Program(program),
         }];
 
-        let _result = run_bootloader_in_proof_mode(bootloader_program.as_bytes(), tasks).unwrap();
+        let (runner, vm) =
+            run_bootloader_in_proof_mode(bootloader_program.as_bytes(), tasks).unwrap();
+        let artifacts = extract_execution_artifacts(runner, vm).unwrap();
+        println!("{:?}", artifacts.public_input);
+    }
+
+    #[test]
+    fn test_cairo_pie() {
+        let bootloader_program = load_test_case_file("bootloader/bootloader_compiled.json");
+        // let cairo_pie_path = Path::new("/home/olivier/git/moonsong-labs/starkware/cairo-vm/cairo_programs/manually_compiled/fibonacci_cairo_pie/fibonacci_pie.zip");
+        let cairo_pie_path = Path::new(
+            "/home/olivier/git/moonsong-labs/starkware/cairo-lang/fibonacci_no_builtin_pie.zip",
+        );
+
+        let cairo_pie = CairoPie::from_file(cairo_pie_path).unwrap();
+        let tasks = vec![TaskSpec {
+            task: Task::Pie(cairo_pie),
+        }];
+
+        let (runner, vm) =
+            run_bootloader_in_proof_mode(bootloader_program.as_bytes(), tasks).unwrap();
+        let artifacts = extract_execution_artifacts(runner, vm).unwrap();
+        println!("{:?}", artifacts.public_input);
     }
 
     #[test]

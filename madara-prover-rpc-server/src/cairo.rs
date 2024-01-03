@@ -3,6 +3,7 @@ use cairo_vm::air_public_input::PublicInputError;
 use cairo_vm::cairo_run::{
     cairo_run, write_encoded_memory, write_encoded_trace, CairoRunConfig, EncodeTraceError,
 };
+use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::BuiltinHintProcessor;
 use cairo_vm::vm::errors::cairo_run_errors::CairoRunError;
 use cairo_vm::vm::errors::trace_errors::TraceError;
 use cairo_vm::vm::runners::cairo_runner::CairoRunner;
@@ -11,8 +12,6 @@ use thiserror::Error;
 use tonic::Status;
 
 use madara_prover_common::models::PublicInput;
-
-use crate::hints::hint_processor;
 
 #[derive(Error, Debug)]
 pub enum ExecutionError {
@@ -97,7 +96,7 @@ pub fn run_in_proof_mode(
         disable_trace_padding: false,
     };
 
-    let mut hint_processor = hint_processor();
+    let mut hint_processor = BuiltinHintProcessor::new_empty();
 
     cairo_run(program_content, &cairo_run_config, &mut hint_processor)
 }
@@ -108,7 +107,6 @@ pub struct ExecutionArtifacts {
     pub trace: Vec<u8>,
 }
 
-// TODO: split in two (extract data + format to ExecutionResponse)
 /// Extracts execution artifacts from the runner and VM (after execution).
 ///
 /// * `cairo_runner` Cairo runner object.
@@ -117,10 +115,11 @@ pub fn extract_execution_artifacts(
     cairo_runner: CairoRunner,
     vm: VirtualMachine,
 ) -> Result<ExecutionArtifacts, ExecutionError> {
-    let cairo_vm_public_input = cairo_runner.get_air_public_input(&vm)?;
-
-    let memory = cairo_runner.relocated_memory.clone();
-    let trace = vm.get_relocated_trace()?;
+    let memory = &cairo_runner.relocated_memory;
+    let trace = cairo_runner
+        .relocated_trace
+        .as_ref()
+        .ok_or(ExecutionError::GenerateTrace(TraceError::TraceNotEnabled))?;
 
     let mut memory_writer = MemWriter::new();
     write_encoded_memory(&memory, &mut memory_writer).map_err(ExecutionError::EncodeMemory)?;
@@ -130,6 +129,7 @@ pub fn extract_execution_artifacts(
     write_encoded_trace(trace, &mut trace_writer).map_err(ExecutionError::EncodeTrace)?;
     let trace_raw = trace_writer.buf;
 
+    let cairo_vm_public_input = cairo_runner.get_air_public_input(&vm)?;
     let public_input = PublicInput::try_from(cairo_vm_public_input)?;
 
     Ok(ExecutionArtifacts {
