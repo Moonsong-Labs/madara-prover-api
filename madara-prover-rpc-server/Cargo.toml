@@ -29,4 +29,5 @@ tonic-build = { workspace = true }
 
 [dev-dependencies]
 test-cases = { path = "../test-cases" }
+rstest = { workspace = true }
 

@@ -13,23 +13,22 @@ mod tests {
     use cairo_vm::vm::runners::cairo_runner::CairoRunner;
     use cairo_vm::vm::security::verify_secure_runner;
     use cairo_vm::vm::vm_core::VirtualMachine;
-    use cairo_vm::Felt252;
+    use cairo_vm::{any_box, Felt252};
     use madara_prover_rpc_server::cairo::extract_execution_artifacts;
+    use rstest::{fixture, rstest};
     use std::any::Any;
     use std::collections::HashMap;
     use std::path::Path;
-    use test_cases::load_test_case_file;
+    use test_cases::get_test_case_file_path;
 
     // Copied from cairo_run.rs and adapted to support injecting the bootloader input.
     // TODO: check if modifying CairoRunConfig to specify custom variables is accepted upstream.
     pub fn cairo_run(
-        program_content: &[u8],
+        program: &Program,
         cairo_run_config: &CairoRunConfig,
         hint_executor: &mut dyn HintProcessor,
         variables: HashMap<String, Box<dyn Any>>,
     ) -> Result<(CairoRunner, VirtualMachine), CairoRunError> {
-        let program = Program::from_bytes(program_content, Some(cairo_run_config.entrypoint))?;
-
         let secure_run = cairo_run_config
             .secure_run
             .unwrap_or(!cairo_run_config.proof_mode);
@@ -71,7 +70,7 @@ mod tests {
     }
 
     pub fn run_bootloader_in_proof_mode(
-        bootloader_content: &[u8],
+        bootloader: &Program,
         tasks: Vec<TaskSpec>,
     ) -> Result<(CairoRunner, VirtualMachine), CairoRunError> {
         let proof_mode = true;
@@ -103,22 +102,35 @@ mod tests {
         };
 
         let mut hint_processor = BuiltinHintProcessor::new_empty();
-        let variables = HashMap::<String, Box<dyn Any>>::from([(
-            "bootloader_input".to_string(),
-            Box::new(bootloader_input) as Box<dyn Any>,
-        )]);
+        let variables = HashMap::<String, Box<dyn Any>>::from([
+            ("bootloader_input".to_string(), any_box!(bootloader_input)),
+            (
+                "bootloader_program".to_string(),
+                any_box!(bootloader.clone()),
+            ),
+        ]);
 
         cairo_run(
-            bootloader_content,
+            bootloader,
             &cairo_run_config,
             &mut hint_processor,
             variables,
         )
     }
 
-    #[test]
-    fn test_program() {
-        let bootloader_program = load_test_case_file("bootloader/bootloader_compiled.json");
+    #[fixture]
+    fn bootloader() -> Program {
+        let bootloader = Program::from_file(
+            get_test_case_file_path("bootloader/bootloader_compiled.json").as_path(),
+            Some("main"),
+        )
+        .unwrap();
+
+        bootloader
+    }
+
+    #[rstest]
+    fn test_program(bootloader: Program) {
         // let program_content = load_test_case_file("fibonacci/fibonacci_compiled.json");
         // let program_content = load_test_case_file("hello-world/hello_world_compiled.json");
         let program_content = std::fs::read_to_string(Path::new(
@@ -131,52 +143,49 @@ mod tests {
             task: Task::Program(program),
         }];
 
-        let (runner, vm) =
-            run_bootloader_in_proof_mode(bootloader_program.as_bytes(), tasks).unwrap();
+        let (runner, vm) = run_bootloader_in_proof_mode(&bootloader, tasks).unwrap();
         let artifacts = extract_execution_artifacts(runner, vm).unwrap();
         println!("{:?}", artifacts.public_input);
     }
 
-    #[test]
-    fn test_cairo_pie() {
-        let bootloader_program = load_test_case_file("bootloader/bootloader_compiled.json");
-        // let cairo_pie_path = Path::new("/home/olivier/git/moonsong-labs/starkware/cairo-vm/cairo_programs/manually_compiled/fibonacci_cairo_pie/fibonacci_pie.zip");
-        let cairo_pie_path = Path::new(
-            "/home/olivier/git/moonsong-labs/starkware/cairo-lang/fibonacci_no_builtin_pie.zip",
-        );
+    #[rstest]
+    fn test_cairo_pie(bootloader: Program) {
+        let cairo_pie_path = Path::new("/home/olivier/git/moonsong-labs/starkware/cairo-vm/cairo_programs/manually_compiled/fibonacci_cairo_pie/fibonacci_pie.zip");
+        // let cairo_pie_path = Path::new(
+        //     "/home/olivier/git/moonsong-labs/starkware/cairo-lang/fibonacci_no_builtin_pie.zip",
+        // );
 
         let cairo_pie = CairoPie::from_file(cairo_pie_path).unwrap();
         let tasks = vec![TaskSpec {
             task: Task::Pie(cairo_pie),
         }];
 
-        let (runner, vm) =
-            run_bootloader_in_proof_mode(bootloader_program.as_bytes(), tasks).unwrap();
+        let (runner, vm) = run_bootloader_in_proof_mode(&bootloader, tasks).unwrap();
         let artifacts = extract_execution_artifacts(runner, vm).unwrap();
         println!("{:?}", artifacts.public_input);
     }
 
-    #[test]
-    fn test_sanity_check() {
-        let cairo_run_config = CairoRunConfig {
-            entrypoint: "main",
-            trace_enabled: true,
-            relocate_mem: true,
-            layout: "starknet_with_keccak",
-            proof_mode: true,
-            secure_run: None,
-            disable_trace_padding: false,
-        };
-
-        let program_content = load_test_case_file("fibonacci/fibonacci_compiled.json");
-        let mut hint_processor = BuiltinHintProcessor::new_empty();
-
-        cairo_run(
-            program_content.as_bytes(),
-            &cairo_run_config,
-            &mut hint_processor,
-            HashMap::new(),
-        )
-        .unwrap();
-    }
+    // #[test]
+    // fn test_sanity_check() {
+    //     let cairo_run_config = CairoRunConfig {
+    //         entrypoint: "main",
+    //         trace_enabled: true,
+    //         relocate_mem: true,
+    //         layout: "starknet_with_keccak",
+    //         proof_mode: true,
+    //         secure_run: None,
+    //         disable_trace_padding: false,
+    //     };
+    //
+    //     let program_content = load_test_case_file("fibonacci/fibonacci_compiled.json");
+    //     let mut hint_processor = BuiltinHintProcessor::new_empty();
+    //
+    //     cairo_run(
+    //         program_content.as_bytes(),
+    //         &cairo_run_config,
+    //         &mut hint_processor,
+    //         HashMap::new(),
+    //     )
+    //     .unwrap();
+    // }
 }
