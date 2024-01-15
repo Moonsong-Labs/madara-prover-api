@@ -151,9 +151,6 @@ mod tests {
     #[rstest]
     fn test_cairo_pie(bootloader: Program) {
         let cairo_pie_path = Path::new("/home/olivier/git/moonsong-labs/starkware/cairo-vm/cairo_programs/manually_compiled/fibonacci_cairo_pie/fibonacci_pie.zip");
-        // let cairo_pie_path = Path::new(
-        //     "/home/olivier/git/moonsong-labs/starkware/cairo-lang/fibonacci_no_builtin_pie.zip",
-        // );
 
         let cairo_pie = CairoPie::from_file(cairo_pie_path).unwrap();
         let tasks = vec![TaskSpec {
@@ -165,27 +162,17 @@ mod tests {
         println!("{:?}", artifacts.public_input);
     }
 
-    // #[test]
-    // fn test_sanity_check() {
-    //     let cairo_run_config = CairoRunConfig {
-    //         entrypoint: "main",
-    //         trace_enabled: true,
-    //         relocate_mem: true,
-    //         layout: "starknet_with_keccak",
-    //         proof_mode: true,
-    //         secure_run: None,
-    //         disable_trace_padding: false,
-    //     };
-    //
-    //     let program_content = load_test_case_file("fibonacci/fibonacci_compiled.json");
-    //     let mut hint_processor = BuiltinHintProcessor::new_empty();
-    //
-    //     cairo_run(
-    //         program_content.as_bytes(),
-    //         &cairo_run_config,
-    //         &mut hint_processor,
-    //         HashMap::new(),
-    //     )
-    //     .unwrap();
-    // }
+    #[rstest]
+    fn test_os_pie(bootloader: Program) {
+        let os_pie_path = get_test_case_file_path("starknet-os/os.zip");
+
+        let os_pie = CairoPie::from_file(os_pie_path.as_path()).unwrap();
+        let tasks = vec![TaskSpec {
+            task: Task::Pie(os_pie),
+        }];
+
+        let (runner, vm) = run_bootloader_in_proof_mode(&bootloader, tasks).unwrap();
+        let artifacts = extract_execution_artifacts(runner, vm).unwrap();
+        println!("{:?}", artifacts.public_input);
+    }
 }
