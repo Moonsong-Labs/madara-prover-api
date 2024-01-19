@@ -41,6 +41,7 @@ pub fn run_prover_from_command_line(
         .arg(prover_config_file)
         .arg("--parameter-file")
         .arg(prover_parameter_file)
+        .arg("--generate_annotations")
         .output()?;
 
     if !output.status.success() {
@@ -81,6 +82,7 @@ pub async fn run_prover_from_command_line_async(
         .arg(prover_config_file)
         .arg("--parameter-file")
         .arg(parameter_file)
+        .arg("--generate_annotations")
         .output()
         .await?;
 

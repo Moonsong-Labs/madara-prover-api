@@ -20,6 +20,7 @@ use crate::services::starknet_prover::starknet_prover_proto::starknet_prover_ser
 use crate::services::starknet_prover::StarknetProverService;
 
 pub mod cairo;
+pub mod evm_adapter;
 pub mod error;
 pub mod services;
 
