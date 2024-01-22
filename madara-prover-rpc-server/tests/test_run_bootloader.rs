@@ -205,6 +205,9 @@ mod tests {
 
     #[rstest]
     fn test_os_pie(bootloader: Program) {
+        let test_case_dir = get_test_case_file_path("starknet-os");
+        let expected_output = expected_output(&test_case_dir);
+
         let os_pie_path = get_test_case_file_path("starknet-os/os.zip");
 
         let os_pie = CairoPie::from_file(os_pie_path.as_path()).unwrap();
@@ -214,6 +217,11 @@ mod tests {
 
         let (runner, vm) = run_bootloader_in_proof_mode(&bootloader, tasks).unwrap();
         let artifacts = extract_execution_artifacts(runner, vm).unwrap();
-        println!("{:?}", artifacts.public_input);
+
+        assert_eq!(artifacts.public_input, expected_output.public_input);
+        assert_eq!(artifacts.trace, expected_output.trace);
+
+        assert_private_input_eq(artifacts.private_input, expected_output.private_input);
+        assert_memory_eq(&artifacts.memory, &expected_output.memory);
     }
 }
