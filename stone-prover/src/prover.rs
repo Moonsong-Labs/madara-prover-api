@@ -116,7 +116,6 @@ pub async fn run_verifier_from_command_line_async(
         .await?;
 
     if !output.status.success() {
-        // TODO: parse verifier errors differently?
         return Err(ProverError::CommandError(output));
     }
 
@@ -275,7 +274,6 @@ pub async fn run_prover_async(
 /// * `annotation_file`: Path to the annotations file, which will be generated as output.
 /// * `extra_output_file`: Path to the extra annotations file, which will be generated as output.
 pub async fn run_verifier_async(
-    // TODO: be consistent with in/out types (use Vec<u8> and not files, etc.)
     in_file: &Path,
     annotation_file: &Path,
     extra_output_file: &Path,

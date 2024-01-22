@@ -150,6 +150,28 @@ fn get_prover_parameters(
     ))
 }
 
+async fn verify_and_annotate_proof(proof: &mut Proof) -> Result<(), ProverError> {
+    let verifier_result =
+        call_verifier(proof).await;
+    
+    let working_dir = proof.working_dir.as_ref().unwrap(); // TODO:
+    let proof_file_path = working_dir.proof_file.as_path();
+    let annotations_file_path = working_dir.annotations_file.clone().ok_or(ProverError::InternalError)?;
+    let extra_annotations_file_path = working_dir.extra_annotations_file.clone().ok_or(ProverError::InternalError)?;
+
+    let split_proof =  {
+        let split_proof = evm_adapter::split_proof(
+            proof_file_path,
+            annotations_file_path.as_path(),
+            extra_annotations_file_path.as_path(),
+        ).unwrap();
+        proof.working_dir = None;
+        Some(split_proof)
+    };
+
+    Ok(())
+}
+
 #[derive(Debug, Default)]
 pub struct ProverService {}
 
@@ -193,32 +215,18 @@ impl Prover for ProverService {
             trace,
         };
 
-        let prover_result =
+        let mut prover_result =
             call_prover(&execution_artifacts, &prover_config, &prover_parameters).await;
 
-        // TODO: clean up
-        // This is messy because this block of code needs the inner Proof, but so does format_prover_result()
-        let mut proof = prover_result.unwrap();
-
-        // TODO: only if split_proof requested
-        let verifier_result =
-            call_verifier(&mut proof).await;
-        
         // If split proof was requested, build it
-        let working_dir = proof.working_dir.unwrap();
-        let split_proof =  {
-            let split_proof = evm_adapter::split_proof(
-                working_dir.proof_file.as_path(),
-                working_dir.annotations_file.unwrap().as_path(),
-                working_dir.extra_annotations_file.unwrap().as_path(),
-            ).unwrap();
-            proof.working_dir = None;
-            Some(split_proof)
+        if build_split_proof == Some(true) && prover_result.is_ok() {
+            let res = verify_and_annotate_proof(prover_result.as_mut().expect("Result checked above")).await;
+            if res.is_err() {
+                prover_result = Err(res.err().unwrap());
+            }
         };
 
-
-
-        let formatted_result = format_prover_result(Ok(proof));
+        let formatted_result = format_prover_result(prover_result);
 
         formatted_result.map(Response::new)
     }
