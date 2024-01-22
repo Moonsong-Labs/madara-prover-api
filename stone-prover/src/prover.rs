@@ -41,7 +41,7 @@ pub fn run_prover_from_command_line(
         .arg(prover_config_file)
         .arg("--parameter-file")
         .arg(prover_parameter_file)
-        .arg("--generate_annotations")
+        .arg("--generate_annotations") // TODO: this is redundant, but evm-stark-adapter fails without it
         .output()?;
 
     if !output.status.success() {
@@ -82,7 +82,7 @@ pub async fn run_prover_from_command_line_async(
         .arg(prover_config_file)
         .arg("--parameter-file")
         .arg(parameter_file)
-        .arg("--generate_annotations")
+        .arg("--generate_annotations") // TODO: this is redundant, but evm-stark-adapter fails without it
         .output()
         .await?;
 
@@ -123,17 +123,6 @@ pub async fn run_verifier_from_command_line_async(
     Ok(())
 }
 
-struct ProverWorkingDirectory {
-    _dir: tempfile::TempDir,
-    public_input_file: PathBuf,
-    private_input_file: PathBuf,
-    _memory_file: PathBuf,
-    _trace_file: PathBuf,
-    prover_config_file: PathBuf,
-    prover_parameter_file: PathBuf,
-    proof_file: PathBuf,
-}
-
 fn prepare_prover_files(
     public_input: &PublicInput,
     private_input: &AirPrivateInput,
@@ -171,7 +160,7 @@ fn prepare_prover_files(
     std::fs::write(&trace_file, trace)?;
 
     Ok(ProverWorkingDirectory {
-        _dir: tmp_dir,
+        dir: tmp_dir,
         public_input_file,
         private_input_file,
         _memory_file: memory_file,
@@ -179,6 +168,8 @@ fn prepare_prover_files(
         prover_config_file,
         prover_parameter_file,
         proof_file,
+        annotations_file: None,
+        extra_annotations_file: None,
     })
 }
 
@@ -220,7 +211,8 @@ pub fn run_prover(
     )?;
 
     // Load the proof from the generated JSON proof file
-    let proof = read_json_from_file(&prover_working_dir.proof_file)?;
+    let mut proof: Proof = read_json_from_file(&prover_working_dir.proof_file)?;
+    proof.working_dir = Some(prover_working_dir);
     Ok(proof)
 }
 
@@ -266,7 +258,8 @@ pub async fn run_prover_async(
     .await?;
 
     // Load the proof from the generated JSON proof file
-    let proof = read_json_from_file(&prover_working_dir.proof_file)?;
+    let mut proof: Proof = read_json_from_file(&prover_working_dir.proof_file)?;
+    proof.working_dir = Some(prover_working_dir);
     Ok(proof)
 }
 

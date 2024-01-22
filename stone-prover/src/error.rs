@@ -8,4 +8,6 @@ pub enum ProverError {
     CommandError(std::process::Output),
     #[error("the format of a JSON file is invalid")]
     SerdeError(#[from] serde_json::Error),
+    #[error("An internal error occurred")]
+    InternalError,
 }

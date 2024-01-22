@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::borrow::BorrowMut;
 
 use tokio::net::UnixListener;
 use tokio_stream::wrappers::UnixListenerStream;
@@ -8,7 +9,7 @@ use madara_prover_common::models::{Proof, ProverConfig, ProverParameters, ProofA
 use prover::ProverRequest;
 use stone_prover::error::ProverError;
 use stone_prover::fri::generate_prover_parameters;
-use stone_prover::prover::run_prover_async;
+use stone_prover::prover::{run_prover_async, run_verifier_async};
 
 use crate::cairo::{
     extract_execution_artifacts, run_in_proof_mode, ExecutionArtifacts, ExecutionError,
@@ -48,6 +49,37 @@ async fn call_prover(
     .await
 }
 
+async fn call_verifier(
+    proof: &mut Proof,
+) -> Result<ProofAnnotations, ProverError> {
+
+    assert!(proof.working_dir.is_some(),
+        "Cannot call verifier without working dir.");
+
+    let mut working_dir = proof.working_dir.as_mut().unwrap();
+    let proof_file = working_dir
+        .proof_file
+        .as_path();
+
+    assert!(working_dir.annotations_file.is_none(),
+        "Annotations file should not already exist");
+    assert!(working_dir.extra_annotations_file.is_none(),
+        "Extra annotations file should not already exist");
+
+    let annotations_file = working_dir.dir.path().join("annotations_file.txt");
+    let extra_annotations_file = working_dir.dir.path().join("extra_annotations_file.txt");
+
+    working_dir.annotations_file = Some(annotations_file.clone());
+    working_dir.extra_annotations_file = Some(extra_annotations_file.clone());
+
+    run_verifier_async(
+        working_dir.proof_file.as_path(),
+        &annotations_file,
+        &extra_annotations_file,
+    )
+    .await
+}
+
 fn format_execution_result(
     execution_result: Result<ExecutionArtifacts, ExecutionError>,
 ) -> Result<ExecutionResponse, Status> {
@@ -77,6 +109,7 @@ fn format_prover_error(e: ProverError) -> Status {
             "Could not parse one or more arguments: {}",
             serde_error
         )),
+        ProverError::InternalError => Status::internal("An internal error occurred"),
     }
 }
 
@@ -144,12 +177,8 @@ impl Prover for ProverService {
             trace,
             prover_config: prover_config_str,
             prover_parameters: prover_parameters_str,
-            split_proof,
+            split_proof: build_split_proof,
         } = request.into_inner();
-
-        if split_proof == Some(true) {
-            todo!(); // split proofs not yet handled
-        }
 
         let public_input = serde_json::from_str(&public_input_str)
             .map_err(|_| Status::invalid_argument("Could not deserialize public input"))?;
@@ -166,7 +195,30 @@ impl Prover for ProverService {
 
         let prover_result =
             call_prover(&execution_artifacts, &prover_config, &prover_parameters).await;
-        let formatted_result = format_prover_result(prover_result);
+
+        // TODO: clean up
+        // This is messy because this block of code needs the inner Proof, but so does format_prover_result()
+        let mut proof = prover_result.unwrap();
+
+        // TODO: only if split_proof requested
+        let verifier_result =
+            call_verifier(&mut proof).await;
+        
+        // If split proof was requested, build it
+        let working_dir = proof.working_dir.unwrap();
+        let split_proof =  {
+            let split_proof = evm_adapter::split_proof(
+                working_dir.proof_file.as_path(),
+                working_dir.annotations_file.unwrap().as_path(),
+                working_dir.extra_annotations_file.unwrap().as_path(),
+            ).unwrap();
+            proof.working_dir = None;
+            Some(split_proof)
+        };
+
+
+
+        let formatted_result = format_prover_result(Ok(proof));
 
         formatted_result.map(Response::new)
     }
