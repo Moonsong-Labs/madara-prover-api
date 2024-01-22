@@ -26,7 +26,7 @@ mod tests {
     use test_fixtures::{assert_memory_eq, assert_private_input_eq};
 
     // Copied from cairo_run.rs and adapted to support injecting the bootloader input.
-    // TODO: check if modifying CairoRunConfig to specify custom variables is accepted upstream.tcasm
+    // TODO: check if modifying CairoRunConfig to specify custom variables is accepted upstream.
     pub fn cairo_run(
         program: &Program,
         cairo_run_config: &CairoRunConfig,
@@ -125,7 +125,7 @@ mod tests {
     #[fixture]
     fn bootloader() -> Program {
         let bootloader = Program::from_file(
-            get_test_case_file_path("bootloader/bootloader_compiled.json").as_path(),
+            get_test_case_file_path("bootloader/bootloader.json").as_path(),
             Some("main"),
         )
         .unwrap();

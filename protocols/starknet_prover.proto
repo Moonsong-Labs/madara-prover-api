@@ -1,0 +1,16 @@
+syntax = "proto3";
+package starknet_prover;
+
+service StarknetProver {
+  rpc ExecuteAndProve(StarknetExecutionRequest) returns (StarknetProverResponse);
+}
+
+message StarknetExecutionRequest {
+  repeated bytes programs = 1;
+  repeated bytes pies = 2;
+  bool split_proof = 3;
+}
+
+message StarknetProverResponse {
+  string proof = 1;
+}

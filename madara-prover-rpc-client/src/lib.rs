@@ -1,2 +1,1 @@
-pub mod client;
-pub mod prover;
+pub mod services;
