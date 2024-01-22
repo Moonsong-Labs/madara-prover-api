@@ -12,7 +12,7 @@ name = "madara_prover_rpc_server"
 path = "src/lib.rs"
 
 [dependencies]
-cairo-vm = { workspace = true, features = ["lambdaworks-felt"] }
+cairo-vm = { workspace = true }
 madara-prover-common = { path = "../madara-prover-common" }
 prost = { workspace = true }
 stone-prover = { path = "../stone-prover" }

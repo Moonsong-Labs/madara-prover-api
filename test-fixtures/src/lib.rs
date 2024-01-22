@@ -1,12 +1,12 @@
+use cairo_vm::air_private_input::{AirPrivateInput, AirPrivateInputSerializable};
 use rstest::fixture;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use tempfile::NamedTempFile;
 
 use test_cases::get_test_case_file_path;
 
-use madara_prover_common::models::{
-    PrivateInput, Proof, ProverConfig, ProverParameters, PublicInput,
-};
+use madara_prover_common::models::{Proof, ProverConfig, ProverParameters, PublicInput};
 use madara_prover_common::toolkit::read_json_from_file;
 
 #[fixture]
@@ -32,6 +32,7 @@ pub struct ProverTestCase {
     pub program_file: PathBuf,
     pub compiled_program_file: PathBuf,
     pub public_input_file: PathBuf,
+    pub private_input_file: PathBuf,
     pub prover_config_file: PathBuf,
     pub prover_parameter_file: PathBuf,
     pub memory_file: PathBuf,
@@ -44,6 +45,7 @@ pub fn fibonacci() -> ProverTestCase {
     let program_file = get_test_case_file_path("fibonacci/fibonacci.cairo");
     let compiled_program_file = get_test_case_file_path("fibonacci/fibonacci_compiled.json");
     let public_input_file = get_test_case_file_path("fibonacci/fibonacci_public_input.json");
+    let private_input_file = get_test_case_file_path("fibonacci/fibonacci_private_input.json");
     let prover_config_file = get_test_case_file_path("fibonacci/cpu_air_prover_config.json");
     let prover_parameter_file = get_test_case_file_path("fibonacci/cpu_air_params.json");
     let memory_file = get_test_case_file_path("fibonacci/fibonacci_memory.bin");
@@ -54,6 +56,7 @@ pub fn fibonacci() -> ProverTestCase {
         program_file,
         compiled_program_file,
         public_input_file,
+        private_input_file,
         prover_config_file,
         prover_parameter_file,
         memory_file,
@@ -76,17 +79,10 @@ pub fn prover_cli_test_case(#[from(fibonacci)] files: ProverTestCase) -> ProverC
     // Generate the private input in a temporary file
     let private_input_file =
         NamedTempFile::new().expect("Creating temporary private input file failed");
-    let private_input = PrivateInput {
-        memory_path: files.memory_file.clone(),
-        trace_path: files.trace_file.clone(),
-        pedersen: vec![],
-        range_check: vec![],
-        ecdsa: vec![],
-        bitwise: vec![],
-        ec_op: vec![],
-        keccak: vec![],
-        poseidon: vec![],
-    };
+    let private_input = AirPrivateInput(HashMap::new()).to_serializable(
+        files.trace_file.to_string_lossy().into_owned(),
+        files.memory_file.to_string_lossy().into_owned(),
+    );
 
     serde_json::to_writer(&private_input_file, &private_input)
         .expect("Writing private input file failed");
@@ -105,6 +101,7 @@ pub fn prover_cli_test_case(#[from(fibonacci)] files: ProverTestCase) -> ProverC
 pub struct ParsedProverTestCase {
     pub compiled_program: Vec<u8>,
     pub public_input: PublicInput,
+    pub private_input: AirPrivateInput,
     pub memory: Vec<u8>,
     pub trace: Vec<u8>,
     pub prover_config: ProverConfig,
@@ -116,6 +113,8 @@ pub struct ParsedProverTestCase {
 pub fn parsed_prover_test_case(#[from(fibonacci)] files: ProverTestCase) -> ParsedProverTestCase {
     let compiled_program = std::fs::read(files.compiled_program_file).unwrap();
     let public_input: PublicInput = read_json_from_file(files.public_input_file).unwrap();
+    let private_input: AirPrivateInputSerializable =
+        read_json_from_file(files.private_input_file).unwrap();
     let prover_config: ProverConfig = read_json_from_file(files.prover_config_file).unwrap();
     let prover_parameters: ProverParameters =
         read_json_from_file(files.prover_parameter_file).unwrap();
@@ -127,6 +126,7 @@ pub fn parsed_prover_test_case(#[from(fibonacci)] files: ProverTestCase) -> Pars
     ParsedProverTestCase {
         compiled_program,
         public_input,
+        private_input: private_input.into(),
         memory,
         trace,
         prover_config,

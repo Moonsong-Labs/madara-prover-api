@@ -1,5 +1,5 @@
+use cairo_vm::air_private_input::AirPrivateInputSerializable;
 use std::collections::HashMap;
-use std::path::PathBuf;
 
 use serde::{Deserialize, Serialize};
 
@@ -50,20 +50,6 @@ pub struct ProverParameters {
     pub field: String,
     pub stark: StarkParameters,
     pub use_extension_field: bool,
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-pub struct PrivateInput {
-    pub memory_path: PathBuf,
-    pub trace_path: PathBuf,
-    // TODO: the types for the 3 fields below are not clear, ask for a spec.
-    pub pedersen: Vec<u32>,
-    pub range_check: Vec<u32>,
-    pub ecdsa: Vec<u32>,
-    pub bitwise: Vec<u32>,
-    pub ec_op: Vec<u32>,
-    pub keccak: Vec<u32>,
-    pub poseidon: Vec<u32>,
 }
 
 #[derive(Serialize, Deserialize, Eq, PartialEq, Debug)]
@@ -136,7 +122,7 @@ pub struct ProofVersion {
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct Proof {
-    pub private_input: PrivateInput,
+    pub private_input: AirPrivateInputSerializable,
     pub proof_hex: String,
     pub proof_parameters: ProverParameters,
     pub prover_config: ProverConfig,
@@ -145,30 +131,9 @@ pub struct Proof {
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
     use test_cases::load_test_case_file;
 
     use super::*;
-
-    /// Sanity check: verify that we can deserialize a private input JSON file.
-    #[test]
-    fn deserialize_private_input() {
-        let private_input_str = load_test_case_file("fibonacci/fibonacci_private_input.json");
-        let private_input: PrivateInput = serde_json::from_str(&private_input_str)
-            .expect("Failed to deserialize private input fixture");
-
-        assert_eq!(
-            private_input.memory_path,
-            Path::new("/home/root/fibonacci_memory.bin")
-        );
-        assert_eq!(
-            private_input.trace_path,
-            Path::new("/home/root/fibonacci_trace.bin")
-        );
-        assert_eq!(private_input.pedersen, Vec::<u32>::new());
-        assert_eq!(private_input.range_check, Vec::<u32>::new());
-        assert_eq!(private_input.ecdsa, Vec::<u32>::new());
-    }
 
     /// Sanity check: verify that we can deserialize a public input JSON file.
     #[test]

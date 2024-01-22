@@ -21,10 +21,11 @@ message ExecutionResponse {
 
 message ProverRequest {
   string public_input = 1;
-  bytes memory = 2;
-  bytes trace = 3;
-  string prover_config = 4;
-  string prover_parameters = 5;
+  string private_input = 2;
+  bytes memory = 3;
+  bytes trace = 4;
+  string prover_config = 5;
+  string prover_parameters = 6;
 }
 
 message ProverResponse {
