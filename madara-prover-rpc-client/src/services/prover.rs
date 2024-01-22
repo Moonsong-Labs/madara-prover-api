@@ -3,8 +3,12 @@ use tonic::Status;
 
 use madara_prover_common::models::{Proof, ProverConfig, ProverParameters, PublicInput};
 
-use crate::prover::prover_client::ProverClient;
-use crate::prover::{ExecutionRequest, ExecutionResponse, ProverRequest, ProverResponse};
+use prover_proto::prover_client::ProverClient;
+use prover_proto::{ExecutionRequest, ExecutionResponse, ProverRequest, ProverResponse};
+
+pub mod prover_proto {
+    tonic::include_proto!("prover");
+}
 
 /// Execute a program in proof mode and retrieve the execution artifacts.
 pub async fn execute_program(
