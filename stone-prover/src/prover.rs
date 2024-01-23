@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 
 use tempfile::tempdir;
 
-use madara_prover_common::models::{Proof, ProverConfig, ProverParameters, PublicInput};
+use madara_prover_common::models::{Proof, ProofAnnotations, ProverConfig, ProverParameters, PublicInput};
 use madara_prover_common::toolkit::{read_json_from_file, write_json_to_file};
 
 use crate::error::ProverError;
@@ -79,6 +79,35 @@ pub async fn run_prover_from_command_line_async(
         .arg(prover_config_file)
         .arg("--parameter-file")
         .arg(parameter_file)
+        .output()
+        .await?;
+
+    if !output.status.success() {
+        return Err(ProverError::CommandError(output));
+    }
+
+    Ok(())
+}
+
+/// Call the Stone Verifier from the command line, asynchronously.
+///
+/// Input files must be prepared by the caller.
+///
+/// * `in_file`: Path to the proof generated from the prover. Corresponds to its "--out-file".
+/// * `annotation_file`: Path to the annotations file, which will be generated as output.
+/// * `extra_output_file`: Path to the extra annotations file, which will be generated as output.
+pub async fn run_verifier_from_command_line_async(
+    in_file: &Path,
+    annotation_file: &Path,
+    extra_output_file: &Path,
+) -> Result<(), ProverError> {
+    let output = tokio::process::Command::new("cpu_air_verifier")
+        .arg("--in_file")
+        .arg(in_file)
+        .arg("--annotation_file")
+        .arg(annotation_file)
+        .arg("--extra_output_file")
+        .arg(extra_output_file)
         .output()
         .await?;
 
@@ -234,6 +263,38 @@ pub async fn run_prover_async(
     // Load the proof from the generated JSON proof file
     let proof = read_json_from_file(&prover_working_dir.proof_file)?;
     Ok(proof)
+}
+
+/// Run the Stone Verifier on the specified program execution, asynchronously.
+///
+/// The main difference from the synchronous implementation is that the verifier process
+/// is spawned asynchronously using `tokio::process::Command`.
+///
+/// This function abstracts the method used to call the verifier. At the moment we invoke
+/// the verifier as a subprocess but other methods can be implemented (ex: FFI).
+///
+/// * `in_file`: Path to the proof generated from the prover. Corresponds to its "--out-file".
+/// * `annotation_file`: Path to the annotations file, which will be generated as output.
+/// * `extra_output_file`: Path to the extra annotations file, which will be generated as output.
+pub async fn run_verifier_async(
+    in_file: &Path,
+    annotation_file: &Path,
+    extra_output_file: &Path,
+) -> Result<ProofAnnotations, ProverError> {
+
+    // Call the verifier
+    run_verifier_from_command_line_async(
+        in_file,
+        annotation_file,
+        extra_output_file,
+    )
+    .await?;
+
+    let annotations = ProofAnnotations {
+        annotation_file: annotation_file.into(),
+        extra_output_file: extra_output_file.into(),
+    };
+    Ok(annotations)
 }
 
 #[cfg(test)]

@@ -23,7 +23,7 @@ use madara_prover_common::models::{Proof, ProverConfig};
 use stone_prover::error::ProverError;
 
 use crate::cairo::{extract_execution_artifacts, ExecutionArtifacts, ExecutionError};
-use crate::services::common::{call_prover, format_prover_error, get_prover_parameters};
+use crate::services::common::{call_prover, format_prover_error, get_prover_parameters, verify_and_annotate_proof};
 use crate::services::starknet_prover::starknet_prover_proto::starknet_prover_server::StarknetProver;
 use crate::services::starknet_prover::starknet_prover_proto::{
     StarknetExecutionRequest, StarknetProverResponse,
@@ -216,8 +216,13 @@ impl StarknetProver for StarknetProverService {
         let prover_parameters =
             get_prover_parameters(None, execution_artifacts.public_input.n_steps)?;
 
-        let prover_result =
+        let mut prover_result =
             call_prover(&execution_artifacts, &prover_config, &prover_parameters).await;
+
+        // If split proof was requested, build it
+        if split_proof && prover_result.is_ok() {
+            verify_and_annotate_proof(prover_result.as_mut().expect("Result checked above")).await?;
+        };
 
         format_prover_result(prover_result).map(Response::new)
     }

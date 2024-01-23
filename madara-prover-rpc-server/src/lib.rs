@@ -12,6 +12,7 @@ use crate::services::starknet_prover::StarknetProverService;
 
 pub mod cairo;
 pub mod error;
+pub mod evm_adapter;
 pub mod services;
 
 pub enum BindAddress<'a> {
