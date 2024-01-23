@@ -35,7 +35,7 @@ mod tests {
         assert_eq!(proof.proof_hex, expected_proof.proof_hex);
     }
 
-    #[ignore = "This test takes ~5 minutes to run"]
+    #[ignore = "this test takes ~5 minutes to run"]
     #[rstest]
     #[tokio::test]
     async fn test_execute_and_prove_starknet_os(
