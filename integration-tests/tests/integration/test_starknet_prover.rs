@@ -34,4 +34,30 @@ mod tests {
         let proof = result.unwrap();
         assert_eq!(proof.proof_hex, expected_proof.proof_hex);
     }
+
+    #[ignore = "This test takes ~5 minutes to run"]
+    #[rstest]
+    #[tokio::test]
+    async fn test_execute_and_prove_starknet_os(
+        #[future] starknet_prover_client_server: (RpcClient, RpcServer),
+    ) {
+        let test_case_dir = get_test_case_file_path("starknet-os");
+        let os_pie_file = test_case_dir.join("os.zip");
+        let proof_file = test_case_dir.join("output/proof.json");
+        let pie_bytes = std::fs::read(os_pie_file).unwrap();
+        let expected_proof: Proof = read_json_from_file(proof_file).unwrap();
+
+        let (mut client, _server) = starknet_prover_client_server.await;
+
+        let programs = vec![];
+        let pies = vec![pie_bytes];
+        let split_proof = false;
+
+        let result = execute_and_prove(&mut client, programs, pies, split_proof).await;
+
+        assert!(result.is_ok(), "{:?}", result);
+
+        let proof = result.unwrap();
+        assert_eq!(proof.proof_hex, expected_proof.proof_hex);
+    }
 }
