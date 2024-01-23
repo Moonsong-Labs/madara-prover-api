@@ -128,8 +128,6 @@ pub struct Proof {
     pub proof_parameters: ProverParameters,
     pub prover_config: ProverConfig,
     pub public_input: PublicInput,
-    #[serde(skip)] // TODO: remove this; pass it around as needed rather than graft it onto Proof
-    pub working_dir: Option<ProverWorkingDirectory>
 }
 
 #[derive(Debug)]

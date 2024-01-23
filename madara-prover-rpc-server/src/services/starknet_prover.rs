@@ -19,7 +19,7 @@ use cairo_vm::vm::vm_core::VirtualMachine;
 use cairo_vm::{any_box, Felt252};
 use tonic::{Request, Response, Status};
 
-use madara_prover_common::models::{Proof, ProverConfig};
+use madara_prover_common::models::{Proof, ProverConfig, ProverWorkingDirectory};
 use stone_prover::error::ProverError;
 
 use crate::cairo::{extract_execution_artifacts, ExecutionArtifacts, ExecutionError};
@@ -170,10 +170,10 @@ pub fn run_bootloader_in_proof_mode(
 
 /// Formats the output of the prover subprocess into the server response.
 fn format_prover_result(
-    prover_result: Result<Proof, ProverError>,
+    prover_result: Result<(Proof, ProverWorkingDirectory), ProverError>,
 ) -> Result<StarknetProverResponse, Status> {
     match prover_result {
-        Ok(proof) => serde_json::to_string(&proof)
+        Ok((proof, _)) => serde_json::to_string(&proof)
             .map(|proof_str| StarknetProverResponse { proof: proof_str })
             .map_err(|_| Status::internal("Could not parse the proof returned by the prover")),
         Err(e) => Err(format_prover_error(e)),
@@ -216,14 +216,16 @@ impl StarknetProver for StarknetProverService {
         let prover_parameters =
             get_prover_parameters(None, execution_artifacts.public_input.n_steps)?;
 
-        let mut prover_result =
-            call_prover(&execution_artifacts, &prover_config, &prover_parameters).await;
+        let (mut proof, mut working_dir) =
+            call_prover(&execution_artifacts, &prover_config, &prover_parameters)
+            .await
+            .map_err(|e| format_prover_error(e))?;
 
         // If split proof was requested, build it
-        if split_proof && prover_result.is_ok() {
-            verify_and_annotate_proof(prover_result.as_mut().expect("Result checked above")).await?;
+        if split_proof {
+            verify_and_annotate_proof(&mut proof, &mut working_dir).await?;
         };
 
-        format_prover_result(prover_result).map(Response::new)
+        format_prover_result(Ok((proof, working_dir))).map(Response::new)
     }
 }

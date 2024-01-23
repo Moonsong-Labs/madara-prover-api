@@ -1,6 +1,6 @@
 use crate::cairo::ExecutionArtifacts;
 use crate::evm_adapter;
-use madara_prover_common::models::{Proof, ProofAnnotations, ProverConfig, ProverParameters};
+use madara_prover_common::models::{Proof, ProofAnnotations, ProverConfig, ProverParameters, ProverWorkingDirectory};
 use stone_prover::error::ProverError;
 use stone_prover::fri::generate_prover_parameters;
 use stone_prover::prover::{run_prover_async, run_verifier_async};
@@ -10,7 +10,7 @@ pub async fn call_prover(
     execution_artifacts: &ExecutionArtifacts,
     prover_config: &ProverConfig,
     prover_parameters: &ProverParameters,
-) -> Result<Proof, ProverError> {
+) -> Result<(Proof, ProverWorkingDirectory), ProverError> {
     run_prover_async(
         &execution_artifacts.public_input,
         &execution_artifacts.private_input,
@@ -24,12 +24,9 @@ pub async fn call_prover(
 
 pub async fn call_verifier(
     proof: &mut Proof,
+    working_dir: &mut ProverWorkingDirectory,
 ) -> Result<ProofAnnotations, ProverError> {
 
-    assert!(proof.working_dir.is_some(),
-        "Cannot call verifier without working dir.");
-
-    let mut working_dir = proof.working_dir.as_mut().unwrap();
     let proof_file = working_dir
         .proof_file
         .as_path();
@@ -86,11 +83,10 @@ pub fn get_prover_parameters(
     ))
 }
 
-pub async fn verify_and_annotate_proof(proof: &mut Proof) -> Result<(), Status> {
+pub async fn verify_and_annotate_proof(proof: &mut Proof, working_dir: &mut ProverWorkingDirectory) -> Result<(), Status> {
     let verifier_result =
-        call_verifier(proof).await;
+        call_verifier(proof, working_dir).await;
 
-    let working_dir = proof.working_dir.as_ref().unwrap(); // TODO:
     let proof_file_path = working_dir.proof_file.as_path();
     let annotations_file_path = working_dir.annotations_file.clone()
         .ok_or(Status::internal("Expected annotations_file_path"))?;
@@ -103,7 +99,6 @@ pub async fn verify_and_annotate_proof(proof: &mut Proof) -> Result<(), Status> 
             annotations_file_path.as_path(),
             extra_annotations_file_path.as_path(),
         ).unwrap();
-        proof.working_dir = None;
         Some(split_proof)
     };
 
