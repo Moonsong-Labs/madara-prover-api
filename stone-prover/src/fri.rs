@@ -74,7 +74,7 @@ mod tests {
 
     #[rstest]
     #[case(32768, vec ! [4, 4, 4, 1])]
-    #[case(524288, vec ! [4, 4, 4, 2])]
+    #[case(524288, vec ! [4, 4, 4, 4, 1])]
     #[case(768, vec ! [4, 4])]
     fn test_compute_fri_step_list(#[case] nb_steps: u32, #[case] expected: Vec<u32>) {
         let last_layer_degree_bound = 64;
