@@ -355,6 +355,6 @@ mod test {
         .await
         .unwrap();
 
-        assert_eq!(proof.proof_hex, parsed_prover_test_case.proof.proof_hex);
+        assert_eq!(proof.0.proof_hex, parsed_prover_test_case.proof.proof_hex);
     }
 }
