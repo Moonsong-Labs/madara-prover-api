@@ -9,3 +9,10 @@ ethers = { version = "2.0", features = ["abigen", "ethers-solc"] }
 serde_json = { workspace = true }
 stark_evm_adapter = { workspace = true }
 tokio = { workspace = true }
+
+[lib]
+path = "src/lib.rs"
+
+[[bin]]
+name = "test_proof_against_l1_sharp_contracts"
+path = "src/main.rs"
