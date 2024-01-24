@@ -31,5 +31,5 @@ struct Args {
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
-    evm_adapter::verify_with_l1(&args.annotated_proof, args.mainnet_rpc).await
+    evm_adapter::verify_annotated_proof_with_l1(&args.annotated_proof, args.mainnet_rpc).await
 }

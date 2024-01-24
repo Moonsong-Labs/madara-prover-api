@@ -18,10 +18,17 @@ use std::{
 /// Verify a proof file against Ethereum SHARP contracts.
 /// 
 /// See lib.rs for more details
-pub async fn verify_with_l1(annotated_proof_file: &PathBuf, mainnet_rpc: String) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn verify_annotated_proof_with_l1(annotated_proof_file: &PathBuf, mainnet_rpc: String) -> Result<(), Box<dyn std::error::Error>> {
     let proof_str = fs::read_to_string(annotated_proof_file)?;
     let annotated_proof: AnnotatedProof = serde_json::from_str(proof_str.as_str())?;
 
+    // generate split proofs
+    let split_proofs: SplitProofs = split_fri_merkle_statements(annotated_proof.clone()).unwrap();
+
+    verify_split_proofs_with_l1(&split_proofs, mainnet_rpc).await
+}
+
+pub async fn verify_split_proofs_with_l1(split_proofs: &SplitProofs, mainnet_rpc: String) -> Result<(), Box<dyn std::error::Error>> {
     let anvil = Some(Anvil::new().fork(mainnet_rpc).spawn());
     let endpoint = anvil.as_ref().unwrap().endpoint();
     let provider = Provider::<Http>::try_from(endpoint.as_str())?;
@@ -44,9 +51,6 @@ pub async fn verify_with_l1(annotated_proof_file: &PathBuf, mainnet_rpc: String)
         provider.clone(),
         from_wallet.with_chain_id(chain_id),
     ));
-
-    // generate split proofs
-    let split_proofs: SplitProofs = split_fri_merkle_statements(annotated_proof.clone()).unwrap();
 
     // start verifying all split proofs
     println!("Verifying trace decommitments:");
