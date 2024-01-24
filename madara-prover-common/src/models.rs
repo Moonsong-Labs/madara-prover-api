@@ -1,4 +1,5 @@
 use cairo_vm::air_private_input::AirPrivateInputSerializable;
+use stark_evm_adapter::annotation_parser::SplitProofs;
 use std::collections::HashMap;
 use std::path::PathBuf;
 
@@ -128,6 +129,7 @@ pub struct Proof {
     pub proof_parameters: ProverParameters,
     pub prover_config: ProverConfig,
     pub public_input: PublicInput,
+    pub split_proofs: Option<SplitProofs>,
 }
 
 #[derive(Debug)]

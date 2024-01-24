@@ -83,9 +83,14 @@ pub fn get_prover_parameters(
     ))
 }
 
+/// Calls `cpu_air_verifier` to verify the proof and produce annotations, then uses
+/// `stark-evm-adapter` to split the proof. The given Proof will then be modified to contain
+/// this additional split-proof.
 pub async fn verify_and_annotate_proof(proof: &mut Proof, working_dir: &mut ProverWorkingDirectory) -> Result<(), Status> {
-    let verifier_result =
-        call_verifier(proof, working_dir).await;
+    let _ = // TODO: return type seems worthless here
+        call_verifier(proof, working_dir)
+        .await
+        .map_err(|e| format_prover_error(e))?;
 
     let proof_file_path = working_dir.proof_file.as_path();
     let annotations_file_path = working_dir.annotations_file.clone()
@@ -93,14 +98,14 @@ pub async fn verify_and_annotate_proof(proof: &mut Proof, working_dir: &mut Prov
     let extra_annotations_file_path = working_dir.extra_annotations_file.clone()
         .ok_or(Status::internal("Expected extra_annotations_file_path"))?;
 
-    let split_proof =  {
-        let split_proof = evm_adapter::split_proof(
-            proof_file_path,
-            annotations_file_path.as_path(),
-            extra_annotations_file_path.as_path(),
-        ).unwrap();
-        Some(split_proof)
-    };
+    let split_proof = evm_adapter::split_proof(
+        proof_file_path,
+        annotations_file_path.as_path(),
+        extra_annotations_file_path.as_path(),
+    )
+    .map_err(|_| Status::internal("Unable to generate split proof"))?;
+    
+    proof.split_proofs = Some(split_proof);
 
     Ok(())
 }
