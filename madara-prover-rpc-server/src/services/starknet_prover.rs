@@ -195,12 +195,6 @@ impl StarknetProver for StarknetProverService {
             split_proof,
         } = request.into_inner();
 
-        if split_proof {
-            return Err(Status::unimplemented(
-                "Proof splitting is not supported yet",
-            ));
-        }
-
         let bootloader_program = Program::from_bytes(BOOTLOADER_PROGRAM, Some("main"))
             .map_err(|e| Status::internal(format!("Failed to load bootloader program: {}", e)))?;
         let prover_config = ProverConfig::default();
