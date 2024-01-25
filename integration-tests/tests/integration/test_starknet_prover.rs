@@ -36,6 +36,7 @@ mod tests {
         assert!(proof.split_proofs.is_none());
     }
 
+    #[ignore = "needs RPC URL"] // see "<redacted>" below
     #[rstest]
     #[tokio::test]
     async fn test_execute_and_prove_and_split(

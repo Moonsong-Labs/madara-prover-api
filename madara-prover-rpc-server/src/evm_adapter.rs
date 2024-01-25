@@ -59,7 +59,7 @@ mod tests {
         let annotated_proof_file = test_cases::get_test_case_file_path("bootloader/empty_bootloader_proof/annotated_proof.json");
         let annotations_file = test_cases::get_test_case_file_path("bootloader/empty_bootloader_proof/annotations.txt");
         let extra_annotations_file = test_cases::get_test_case_file_path("bootloader/empty_bootloader_proof/extra_annotations.txt");
-        let split_proofs = split_proof(
+        let split_proofs = crate::evm_adapter::split_proof(
             &annotated_proof_file,
             &annotations_file,
             &extra_annotations_file
