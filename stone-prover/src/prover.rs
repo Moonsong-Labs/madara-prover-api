@@ -6,7 +6,7 @@ use tempfile::tempdir;
 use madara_prover_common::models::{Proof, ProofAnnotations, ProverConfig, ProverParameters, ProverWorkingDirectory, PublicInput};
 use madara_prover_common::toolkit::{read_json_from_file, write_json_to_file};
 
-use crate::error::ProverError;
+use crate::error::{ProverError, VerifierError};
 
 /// Call the Stone Prover from the command line.
 ///
@@ -100,7 +100,7 @@ pub async fn run_verifier_from_command_line_async(
     in_file: &Path,
     annotation_file: &Path,
     extra_output_file: &Path,
-) -> Result<(), ProverError> {
+) -> Result<(), VerifierError> {
     let output = tokio::process::Command::new("cpu_air_verifier")
         .arg("--in_file")
         .arg(in_file)
@@ -112,7 +112,7 @@ pub async fn run_verifier_from_command_line_async(
         .await?;
 
     if !output.status.success() {
-        return Err(ProverError::CommandError(output));
+        return Err(VerifierError::CommandError(output));
     }
 
     Ok(())
@@ -271,7 +271,7 @@ pub async fn run_verifier_async(
     in_file: &Path,
     annotation_file: &Path,
     extra_output_file: &Path,
-) -> Result<ProofAnnotations, ProverError> {
+) -> Result<ProofAnnotations, VerifierError> {
 
     // Call the verifier
     run_verifier_from_command_line_async(

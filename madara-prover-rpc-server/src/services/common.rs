@@ -1,7 +1,7 @@
 use crate::cairo::ExecutionArtifacts;
 use crate::evm_adapter;
 use madara_prover_common::models::{Proof, ProofAnnotations, ProverConfig, ProverParameters, ProverWorkingDirectory};
-use stone_prover::error::ProverError;
+use stone_prover::error::{ProverError, VerifierError};
 use stone_prover::fri::generate_prover_parameters;
 use stone_prover::prover::{run_prover_async, run_verifier_async};
 use tonic::Status;
@@ -24,7 +24,7 @@ pub async fn call_prover(
 
 pub async fn call_verifier(
     working_dir: &mut ProverWorkingDirectory,
-) -> Result<ProofAnnotations, ProverError> {
+) -> Result<ProofAnnotations, VerifierError> {
     let annotations_file = working_dir.dir.path().join("annotations_file.txt");
     let extra_annotations_file = working_dir.dir.path().join("extra_annotations_file.txt");
 
@@ -56,6 +56,19 @@ pub fn format_prover_error(e: ProverError) -> Status {
     }
 }
 
+pub fn format_verifier_error(e: VerifierError) -> Status {
+    match e {
+        VerifierError::CommandError(verifier_output) => Status::invalid_argument(format!(
+            "Verifier run failed ({}): {}",
+            verifier_output.status,
+            String::from_utf8_lossy(&verifier_output.stderr),
+        )),
+        VerifierError::IoError(io_error) => {
+            Status::internal(format!("Could not run the verifier: {}", io_error))
+        },
+    }
+}
+
 pub fn get_prover_parameters(
     user_provided_parameters: Option<String>,
     nb_steps: u32,
@@ -79,7 +92,7 @@ pub async fn verify_and_annotate_proof(proof: &mut Proof, working_dir: &mut Prov
     let _ = // TODO: return type seems worthless here
         call_verifier(working_dir)
         .await
-        .map_err(|e| format_prover_error(e))?;
+        .map_err(|e| format_verifier_error(e))?;
 
     let proof_file_path = working_dir.proof_file.as_path();
     let annotations_file_path = working_dir.annotations_file.clone()
