@@ -54,8 +54,6 @@ pub fn load_annotations_file(file: &Path) -> std::io::Result<Vec<String>> {
 }
 
 mod tests {
-    use super::*;
-
     #[test]
     fn split_proof_works_with_empty_bootloader_proof() {
         let annotated_proof_file = test_cases::get_test_case_file_path("bootloader/empty_bootloader_proof/annotated_proof.json");

@@ -1,5 +1,5 @@
 use cairo_vm::air_private_input::AirPrivateInput;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use tempfile::tempdir;
 

@@ -23,19 +23,8 @@ pub async fn call_prover(
 }
 
 pub async fn call_verifier(
-    proof: &mut Proof,
     working_dir: &mut ProverWorkingDirectory,
 ) -> Result<ProofAnnotations, ProverError> {
-
-    let proof_file = working_dir
-        .proof_file
-        .as_path();
-
-    assert!(working_dir.annotations_file.is_none(),
-        "Annotations file should not already exist");
-    assert!(working_dir.extra_annotations_file.is_none(),
-        "Extra annotations file should not already exist");
-
     let annotations_file = working_dir.dir.path().join("annotations_file.txt");
     let extra_annotations_file = working_dir.dir.path().join("extra_annotations_file.txt");
 
@@ -88,7 +77,7 @@ pub fn get_prover_parameters(
 /// this additional split-proof.
 pub async fn verify_and_annotate_proof(proof: &mut Proof, working_dir: &mut ProverWorkingDirectory) -> Result<(), Status> {
     let _ = // TODO: return type seems worthless here
-        call_verifier(proof, working_dir)
+        call_verifier(working_dir)
         .await
         .map_err(|e| format_prover_error(e))?;
 

@@ -7,12 +7,12 @@ use ethers::{
     utils::{hex, Anvil},
 };
 use stark_evm_adapter::{
-    annotated_proof::{self, AnnotatedProof},
+    annotated_proof::AnnotatedProof,
     annotation_parser::{split_fri_merkle_statements, SplitProofs},
     ContractFunctionCall,
 };
 use std::{
-    convert::TryFrom, env, fs, path::PathBuf, str::FromStr, sync::Arc
+    convert::TryFrom, fs, path::PathBuf, str::FromStr, sync::Arc
 };
 
 /// Verify a proof file against Ethereum SHARP contracts.
