@@ -117,7 +117,7 @@ fn make_bootloader_tasks(
     program_tasks.chain(cairo_pie_tasks).collect()
 }
 
-fn run_bootloader_in_proof_mode(
+pub fn run_bootloader_in_proof_mode(
     bootloader: &Program,
     tasks: Vec<TaskSpec>,
 ) -> Result<ExecutionArtifacts, ExecutionError> {
