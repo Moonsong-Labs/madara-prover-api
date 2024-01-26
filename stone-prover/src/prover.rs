@@ -1,12 +1,12 @@
 use cairo_vm::air_private_input::AirPrivateInput;
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use tempfile::tempdir;
 
-use madara_prover_common::models::{Proof, ProverConfig, ProverParameters, PublicInput};
+use madara_prover_common::models::{Proof, ProofAnnotations, ProverConfig, ProverParameters, ProverWorkingDirectory, PublicInput};
 use madara_prover_common::toolkit::{read_json_from_file, write_json_to_file};
 
-use crate::error::ProverError;
+use crate::error::{ProverError, VerifierError};
 
 /// Call the Stone Prover from the command line.
 ///
@@ -89,15 +89,33 @@ pub async fn run_prover_from_command_line_async(
     Ok(())
 }
 
-struct ProverWorkingDirectory {
-    _dir: tempfile::TempDir,
-    public_input_file: PathBuf,
-    private_input_file: PathBuf,
-    _memory_file: PathBuf,
-    _trace_file: PathBuf,
-    prover_config_file: PathBuf,
-    prover_parameter_file: PathBuf,
-    proof_file: PathBuf,
+/// Call the Stone Verifier from the command line, asynchronously.
+///
+/// Input files must be prepared by the caller.
+///
+/// * `in_file`: Path to the proof generated from the prover. Corresponds to its "--out-file".
+/// * `annotation_file`: Path to the annotations file, which will be generated as output.
+/// * `extra_output_file`: Path to the extra annotations file, which will be generated as output.
+pub async fn run_verifier_from_command_line_async(
+    in_file: &Path,
+    annotation_file: &Path,
+    extra_output_file: &Path,
+) -> Result<(), VerifierError> {
+    let output = tokio::process::Command::new("cpu_air_verifier")
+        .arg("--in_file")
+        .arg(in_file)
+        .arg("--annotation_file")
+        .arg(annotation_file)
+        .arg("--extra_output_file")
+        .arg(extra_output_file)
+        .output()
+        .await?;
+
+    if !output.status.success() {
+        return Err(VerifierError::CommandError(output));
+    }
+
+    Ok(())
 }
 
 fn prepare_prover_files(
@@ -137,7 +155,7 @@ fn prepare_prover_files(
     std::fs::write(&trace_file, trace)?;
 
     Ok(ProverWorkingDirectory {
-        _dir: tmp_dir,
+        dir: tmp_dir,
         public_input_file,
         private_input_file,
         _memory_file: memory_file,
@@ -145,6 +163,8 @@ fn prepare_prover_files(
         prover_config_file,
         prover_parameter_file,
         proof_file,
+        annotations_file: None,
+        extra_annotations_file: None,
     })
 }
 
@@ -211,7 +231,7 @@ pub async fn run_prover_async(
     trace: &Vec<u8>,
     prover_config: &ProverConfig,
     parameters: &ProverParameters,
-) -> Result<Proof, ProverError> {
+) -> Result<(Proof, ProverWorkingDirectory), ProverError> {
     let prover_working_dir = prepare_prover_files(
         public_input,
         private_input,
@@ -233,7 +253,39 @@ pub async fn run_prover_async(
 
     // Load the proof from the generated JSON proof file
     let proof = read_json_from_file(&prover_working_dir.proof_file)?;
-    Ok(proof)
+    Ok((proof, prover_working_dir))
+}
+
+/// Run the Stone Verifier on the specified program execution, asynchronously.
+///
+/// The main difference from the synchronous implementation is that the verifier process
+/// is spawned asynchronously using `tokio::process::Command`.
+///
+/// This function abstracts the method used to call the verifier. At the moment we invoke
+/// the verifier as a subprocess but other methods can be implemented (ex: FFI).
+///
+/// * `in_file`: Path to the proof generated from the prover. Corresponds to its "--out-file".
+/// * `annotation_file`: Path to the annotations file, which will be generated as output.
+/// * `extra_output_file`: Path to the extra annotations file, which will be generated as output.
+pub async fn run_verifier_async(
+    in_file: &Path,
+    annotation_file: &Path,
+    extra_output_file: &Path,
+) -> Result<ProofAnnotations, VerifierError> {
+
+    // Call the verifier
+    run_verifier_from_command_line_async(
+        in_file,
+        annotation_file,
+        extra_output_file,
+    )
+    .await?;
+
+    let annotations = ProofAnnotations {
+        annotation_file: annotation_file.into(),
+        extra_output_file: extra_output_file.into(),
+    };
+    Ok(annotations)
 }
 
 #[cfg(test)]
@@ -303,6 +355,6 @@ mod test {
         .await
         .unwrap();
 
-        assert_eq!(proof.proof_hex, parsed_prover_test_case.proof.proof_hex);
+        assert_eq!(proof.0.proof_hex, parsed_prover_test_case.proof.proof_hex);
     }
 }

@@ -23,6 +23,7 @@ serde_json = { workspace = true }
 tokio-stream = { version = "0.1.14", features = ["net"] }
 bincode = "2.0.0-rc.3"
 serde = { version = "1.0.193", features = ["derive"] }
+stark_evm_adapter = { workspace = true }
 
 [build-dependencies]
 tonic-build = { workspace = true }

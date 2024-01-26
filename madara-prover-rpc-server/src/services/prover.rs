@@ -10,7 +10,7 @@ use crate::services::prover::prover_proto::prover_server::Prover;
 use crate::services::prover::prover_proto::{
     ExecutionRequest, ExecutionResponse, ProverRequest, ProverResponse,
 };
-use madara_prover_common::models::{Proof, ProverConfig};
+use madara_prover_common::models::{Proof, ProverConfig, ProverWorkingDirectory};
 use stone_prover::error::ProverError;
 
 pub mod prover_proto {
@@ -39,10 +39,10 @@ fn format_execution_result(
 
 /// Formats the output of the prover subprocess into the server response.
 fn format_prover_result(
-    prover_result: Result<Proof, ProverError>,
+    prover_result: Result<(Proof, ProverWorkingDirectory), ProverError>,
 ) -> Result<ProverResponse, Status> {
     match prover_result {
-        Ok(proof) => serde_json::to_string(&proof)
+        Ok((proof, _)) => serde_json::to_string(&proof)
             .map(|proof_str| ProverResponse { proof: proof_str })
             .map_err(|_| Status::internal("Could not parse the proof returned by the prover")),
         Err(e) => Err(format_prover_error(e)),

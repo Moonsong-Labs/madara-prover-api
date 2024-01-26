@@ -19,11 +19,11 @@ use cairo_vm::vm::vm_core::VirtualMachine;
 use cairo_vm::{any_box, Felt252};
 use tonic::{Request, Response, Status};
 
-use madara_prover_common::models::{Proof, ProverConfig};
+use madara_prover_common::models::{Proof, ProverConfig, ProverWorkingDirectory};
 use stone_prover::error::ProverError;
 
 use crate::cairo::{extract_execution_artifacts, ExecutionArtifacts, ExecutionError};
-use crate::services::common::{call_prover, format_prover_error, get_prover_parameters};
+use crate::services::common::{call_prover, format_prover_error, get_prover_parameters, verify_and_annotate_proof};
 use crate::services::starknet_prover::starknet_prover_proto::starknet_prover_server::StarknetProver;
 use crate::services::starknet_prover::starknet_prover_proto::{
     StarknetExecutionRequest, StarknetProverResponse,
@@ -170,10 +170,10 @@ pub fn run_bootloader_in_proof_mode(
 
 /// Formats the output of the prover subprocess into the server response.
 fn format_prover_result(
-    prover_result: Result<Proof, ProverError>,
+    prover_result: Result<(Proof, ProverWorkingDirectory), ProverError>,
 ) -> Result<StarknetProverResponse, Status> {
     match prover_result {
-        Ok(proof) => serde_json::to_string(&proof)
+        Ok((proof, _)) => serde_json::to_string(&proof)
             .map(|proof_str| StarknetProverResponse { proof: proof_str })
             .map_err(|_| Status::internal("Could not parse the proof returned by the prover")),
         Err(e) => Err(format_prover_error(e)),
@@ -195,12 +195,6 @@ impl StarknetProver for StarknetProverService {
             split_proof,
         } = request.into_inner();
 
-        if split_proof {
-            return Err(Status::unimplemented(
-                "Proof splitting is not supported yet",
-            ));
-        }
-
         let bootloader_program = Program::from_bytes(BOOTLOADER_PROGRAM, Some("main"))
             .map_err(|e| Status::internal(format!("Failed to load bootloader program: {}", e)))?;
         let prover_config = ProverConfig::default();
@@ -216,9 +210,16 @@ impl StarknetProver for StarknetProverService {
         let prover_parameters =
             get_prover_parameters(None, execution_artifacts.public_input.n_steps)?;
 
-        let prover_result =
-            call_prover(&execution_artifacts, &prover_config, &prover_parameters).await;
+        let (mut proof, mut working_dir) =
+            call_prover(&execution_artifacts, &prover_config, &prover_parameters)
+            .await
+            .map_err(format_prover_error)?;
 
-        format_prover_result(prover_result).map(Response::new)
+        // If split proof was requested, build it
+        if split_proof {
+            verify_and_annotate_proof(&mut proof, &mut working_dir).await?;
+        };
+
+        format_prover_result(Ok((proof, working_dir))).map(Response::new)
     }
 }

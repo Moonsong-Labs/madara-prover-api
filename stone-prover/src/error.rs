@@ -9,3 +9,11 @@ pub enum ProverError {
     #[error("the format of a JSON file is invalid")]
     SerdeError(#[from] serde_json::Error),
 }
+
+#[derive(Error, Debug)]
+pub enum VerifierError {
+    #[error("verifier could not be launched")]
+    IoError(#[from] std::io::Error),
+    #[error("verifier run failed")]
+    CommandError(std::process::Output),
+}
