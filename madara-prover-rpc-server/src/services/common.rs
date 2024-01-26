@@ -92,7 +92,7 @@ pub async fn verify_and_annotate_proof(proof: &mut Proof, working_dir: &mut Prov
     let _ = // TODO: return type seems worthless here
         call_verifier(working_dir)
         .await
-        .map_err(|e| format_verifier_error(e))?;
+        .map_err(format_verifier_error)?;
 
     let proof_file_path = working_dir.proof_file.as_path();
     let annotations_file_path = working_dir.annotations_file.clone()

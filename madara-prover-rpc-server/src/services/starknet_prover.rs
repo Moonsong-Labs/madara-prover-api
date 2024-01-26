@@ -213,7 +213,7 @@ impl StarknetProver for StarknetProverService {
         let (mut proof, mut working_dir) =
             call_prover(&execution_artifacts, &prover_config, &prover_parameters)
             .await
-            .map_err(|e| format_prover_error(e))?;
+            .map_err(format_prover_error)?;
 
         // If split proof was requested, build it
         if split_proof {
