@@ -8,6 +8,7 @@ publish = false
 
 [dev-dependencies]
 rand = "0.8.5"
+madara-prover-common = { path = "../madara-prover-common" }
 madara-prover-rpc-client = { path = "../madara-prover-rpc-client" }
 madara-prover-rpc-server = { path = "../madara-prover-rpc-server" }
 rstest = { workspace = true }

@@ -66,6 +66,7 @@ mod tests {
     #[case(2, 1)]
     #[case(32, 5)]
     #[case(1000, 10)]
+    #[case(524288, 19)]
     fn test_ceil_log2(#[case] x: u32, #[case] expected: u32) {
         let log = ceil_log2(x);
         assert_eq!(log, expected);
@@ -73,6 +74,7 @@ mod tests {
 
     #[rstest]
     #[case(32768, vec ! [4, 4, 4, 1])]
+    #[case(524288, vec ! [4, 4, 4, 4, 1])]
     #[case(768, vec ! [4, 4])]
     fn test_compute_fri_step_list(#[case] nb_steps: u32, #[case] expected: Vec<u32>) {
         let last_layer_degree_bound = 64;

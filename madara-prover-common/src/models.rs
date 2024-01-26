@@ -72,20 +72,20 @@ pub enum Layout {
     StarknetWithKeccak,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct MemorySegmentAddresses {
     pub begin_addr: u32,
     pub stop_ptr: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct PublicMemoryEntry {
     pub address: u32,
     pub value: String,
     pub page: u32,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct PublicInput {
     pub layout: Layout,
     pub rc_min: u32,
