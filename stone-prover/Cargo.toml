@@ -5,6 +5,7 @@ edition = "2021"
 description = "A Rust wrapper around StarkWare's Stone Prover."
 
 [dependencies]
+cairo-vm = { workspace = true }
 madara-prover-common = { path = "../madara-prover-common" }
 serde = { workspace = true, features = ["derive"] }
 serde_json = { workspace = true }

@@ -1,3 +1,4 @@
+use cairo_vm::air_private_input::AirPrivateInput;
 use tonic::Status;
 
 use madara_prover_common::models::{Proof, ProverConfig, ProverParameters, PublicInput};
@@ -33,17 +34,22 @@ fn unpack_prover_response(prover_result: Result<ProverResponse, Status>) -> Resu
 pub async fn prove_execution(
     client: &mut ProverClient<tonic::transport::Channel>,
     public_input: PublicInput,
+    private_input: AirPrivateInput,
     memory: Vec<u8>,
     trace: Vec<u8>,
     prover_config: ProverConfig,
     prover_parameters: ProverParameters,
 ) -> Result<Proof, Status> {
     let public_input_str = serde_json::to_string(&public_input).unwrap();
+    let private_input_str =
+        serde_json::to_string(&private_input.to_serializable("".to_string(), "".to_string()))
+            .unwrap();
     let prover_config_str = serde_json::to_string(&prover_config).unwrap();
     let prover_parameters_str = serde_json::to_string(&prover_parameters).unwrap();
 
     let request = tonic::Request::new(ProverRequest {
         public_input: public_input_str,
+        private_input: private_input_str,
         memory,
         trace,
         prover_config: prover_config_str,

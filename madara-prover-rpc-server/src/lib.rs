@@ -1,3 +1,4 @@
+use cairo_vm::air_private_input::{AirPrivateInput, AirPrivateInputSerializable};
 use std::path::Path;
 
 use tokio::net::UnixListener;
@@ -17,7 +18,7 @@ use crate::error::ServerError;
 use crate::prover::prover_server::{Prover, ProverServer};
 use crate::prover::{ExecutionRequest, ExecutionResponse, ProverResponse};
 
-mod cairo;
+pub mod cairo;
 pub mod error;
 
 pub mod prover {
@@ -36,6 +37,7 @@ async fn call_prover(
 ) -> Result<Proof, ProverError> {
     run_prover_async(
         &execution_artifacts.public_input,
+        &execution_artifacts.private_input,
         &execution_artifacts.memory,
         &execution_artifacts.trace,
         prover_config,
@@ -136,6 +138,7 @@ impl Prover for ProverService {
     ) -> Result<Response<ProverResponse>, Status> {
         let ProverRequest {
             public_input: public_input_str,
+            private_input: private_input_str,
             memory,
             trace,
             prover_config: prover_config_str,
@@ -144,6 +147,9 @@ impl Prover for ProverService {
 
         let public_input = serde_json::from_str(&public_input_str)
             .map_err(|_| Status::invalid_argument("Could not deserialize public input"))?;
+        let private_input: AirPrivateInputSerializable =
+            serde_json::from_str(&private_input_str)
+                .map_err(|_| Status::invalid_argument("Could not deserialize private input"))?;
         let prover_config = serde_json::from_str(&prover_config_str)
             .map_err(|_| Status::invalid_argument("Could not deserialize prover config"))?;
         let prover_parameters = serde_json::from_str(&prover_parameters_str)
@@ -151,6 +157,7 @@ impl Prover for ProverService {
 
         let execution_artifacts = ExecutionArtifacts {
             public_input,
+            private_input: AirPrivateInput::from(private_input),
             memory,
             trace,
         };

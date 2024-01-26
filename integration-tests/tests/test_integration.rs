@@ -84,6 +84,7 @@ mod tests {
         let result = prove_execution(
             &mut client,
             test_case.public_input,
+            test_case.private_input,
             test_case.memory,
             test_case.trace,
             test_case.prover_config,
