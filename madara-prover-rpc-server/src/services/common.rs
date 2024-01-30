@@ -1,6 +1,8 @@
 use crate::cairo::ExecutionArtifacts;
 use crate::evm_adapter;
-use madara_prover_common::models::{Proof, ProofAnnotations, ProverConfig, ProverParameters, ProverWorkingDirectory};
+use madara_prover_common::models::{
+    Proof, ProofAnnotations, ProverConfig, ProverParameters, ProverWorkingDirectory,
+};
 use stone_prover::error::{ProverError, VerifierError};
 use stone_prover::fri::generate_prover_parameters;
 use stone_prover::prover::{run_prover_async, run_verifier_async};
@@ -65,7 +67,7 @@ pub fn format_verifier_error(e: VerifierError) -> Status {
         )),
         VerifierError::IoError(io_error) => {
             Status::internal(format!("Could not run the verifier: {}", io_error))
-        },
+        }
     }
 }
 
@@ -88,16 +90,23 @@ pub fn get_prover_parameters(
 /// Calls `cpu_air_verifier` to verify the proof and produce annotations, then uses
 /// `stark-evm-adapter` to split the proof. The given Proof will then be modified to contain
 /// this additional split-proof.
-pub async fn verify_and_annotate_proof(proof: &mut Proof, working_dir: &mut ProverWorkingDirectory) -> Result<(), Status> {
+pub async fn verify_and_annotate_proof(
+    proof: &mut Proof,
+    working_dir: &mut ProverWorkingDirectory,
+) -> Result<(), Status> {
     let _ = // TODO: return type seems worthless here
         call_verifier(working_dir)
         .await
         .map_err(format_verifier_error)?;
 
     let proof_file_path = working_dir.proof_file.as_path();
-    let annotations_file_path = working_dir.annotations_file.clone()
+    let annotations_file_path = working_dir
+        .annotations_file
+        .clone()
         .ok_or(Status::internal("Expected annotations_file_path"))?;
-    let extra_annotations_file_path = working_dir.extra_annotations_file.clone()
+    let extra_annotations_file_path = working_dir
+        .extra_annotations_file
+        .clone()
         .ok_or(Status::internal("Expected extra_annotations_file_path"))?;
 
     let split_proof = evm_adapter::split_proof(
@@ -106,7 +115,7 @@ pub async fn verify_and_annotate_proof(proof: &mut Proof, working_dir: &mut Prov
         extra_annotations_file_path.as_path(),
     )
     .map_err(|_| Status::internal("Unable to generate split proof"))?;
-    
+
     proof.split_proofs = Some(split_proof);
 
     Ok(())

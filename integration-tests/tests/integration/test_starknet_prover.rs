@@ -67,8 +67,9 @@ mod tests {
         assert!(split_proofs.fri_merkle_statements.len() > 0);
 
         let private_url = "<redacted>";
-        evm_adapter::verify_split_proofs_with_l1(&split_proofs, private_url.into()).await.unwrap();
-
+        evm_adapter::verify_split_proofs_with_l1(&split_proofs, private_url.into())
+            .await
+            .unwrap();
     }
 
     #[ignore = "this test takes ~5 minutes to run"]

@@ -3,16 +3,16 @@ use std::path::PathBuf;
 
 /// Binary borrowed from `stark-evm-adapter` used to test a split proof against in-production
 /// SHARP provers on Ethereum.
-/// 
+///
 /// Source: https://github.com/notlesh/stark-evm-adapter/blob/main/examples/verify_stone_proof.rs
-/// 
+///
 /// Input file ("split proof") should be a proof JSON file generated from `cpu_air_prover` along
 /// with an `annotations` field (array) and `extra_annotations` field (array) which come from,
 /// respectively, `--annotations_file` and `--extra_output_file` from `cpu_air_verifier`.
-/// 
+///
 /// This also requires `anvil` from `forge`
 /// [to be installed](https://book.getfoundry.sh/getting-started/installation).
-/// 
+///
 /// A suitable input file can be borrowed from
 /// https://github.com/notlesh/stark-evm-adapter/blob/main/tests/fixtures/annotated_proof.json
 
