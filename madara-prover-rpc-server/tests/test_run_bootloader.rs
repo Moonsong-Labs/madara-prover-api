@@ -72,6 +72,7 @@ mod tests {
 
     #[rstest]
     #[case::fibonacci("fibonacci")]
+    #[case::fibonacci_stone_e2e("fibonacci-stone-e2e")]
     fn test_cairo_pie(bootloader: Program, #[case] test_case: String) {
         let test_case_dir = get_test_case_file_path(&format!("bootloader/pies/{}", test_case));
         let expected_output = expected_output(&test_case_dir);
