@@ -23,7 +23,9 @@ use madara_prover_common::models::{Proof, ProverConfig, ProverWorkingDirectory};
 use stone_prover::error::ProverError;
 
 use crate::cairo::{extract_execution_artifacts, ExecutionArtifacts, ExecutionError};
-use crate::services::common::{call_prover, format_prover_error, get_prover_parameters, verify_and_annotate_proof};
+use crate::services::common::{
+    call_prover, format_prover_error, get_prover_parameters, verify_and_annotate_proof,
+};
 use crate::services::starknet_prover::starknet_prover_proto::starknet_prover_server::StarknetProver;
 use crate::services::starknet_prover::starknet_prover_proto::{
     StarknetExecutionRequest, StarknetProverResponse,
@@ -122,7 +124,7 @@ pub fn run_bootloader_in_proof_mode(
     tasks: Vec<TaskSpec>,
 ) -> Result<ExecutionArtifacts, ExecutionError> {
     let proof_mode = true;
-    let layout = "starknet_with_keccak";
+    let layout = "starknet";
 
     let cairo_run_config = CairoRunConfig {
         entrypoint: "main",
@@ -212,8 +214,8 @@ impl StarknetProver for StarknetProverService {
 
         let (mut proof, mut working_dir) =
             call_prover(&execution_artifacts, &prover_config, &prover_parameters)
-            .await
-            .map_err(format_prover_error)?;
+                .await
+                .map_err(format_prover_error)?;
 
         // If split proof was requested, build it
         if split_proof {

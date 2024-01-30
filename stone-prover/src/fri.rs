@@ -33,7 +33,7 @@ pub fn compute_fri_steps(nb_steps: u32, last_layer_degree_bound: u32) -> Vec<u32
         fri_steps.push(remainder);
     }
 
-    fri_steps
+    [vec![0], fri_steps].concat()
 }
 
 /// Generates prover parameters based on program parameters.

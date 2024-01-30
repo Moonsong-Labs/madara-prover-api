@@ -80,7 +80,7 @@ pub fn get_prover_parameters(
             .map_err(|_| Status::invalid_argument("Could not read prover parameters"));
     }
 
-    let last_layer_degree_bound = 32;
+    let last_layer_degree_bound = 64;
     Ok(generate_prover_parameters(
         nb_steps,
         last_layer_degree_bound,

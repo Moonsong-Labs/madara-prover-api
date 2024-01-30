@@ -68,6 +68,8 @@ pub enum Layout {
     Starknet,
     #[serde(rename = "recursive_large_output")]
     RecursiveLargeOutput,
+    #[serde(rename = "all_cairo")]
+    AllCairo,
     #[serde(rename = "all_solidity")]
     AllSolidity,
     #[serde(rename = "starknet_with_keccak")]
