@@ -1,6 +1,6 @@
 {
-    "trace_path": "/home/olivier/git/moonsong-labs/starkware/cairo-lang/trace.bin",
-    "memory_path": "/home/olivier/git/moonsong-labs/starkware/cairo-lang/memory.bin",
+    "trace_path": "./output/trace.bin",
+    "memory_path": "./output/memory.bin",
     "pedersen": [
         {
             "index": 0,
