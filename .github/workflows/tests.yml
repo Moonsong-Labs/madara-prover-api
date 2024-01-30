@@ -64,7 +64,7 @@ jobs:
         run: cargo build --verbose
 
       - name: Cargo fmt
-      - run: cargo fmt
+      - run: cargo fmt --check
 
       - name: Lint with Clippy
         run: cargo clippy -- -D warnings
