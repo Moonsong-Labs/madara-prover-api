@@ -25,10 +25,10 @@ pub fn compute_fri_steps(nb_steps: u32, last_layer_degree_bound: u32) -> Vec<u32
     let last_layer_degree_bound_log = ceil_log2(last_layer_degree_bound);
 
     let sigma_fri_step_list = nb_steps_log + 4 - last_layer_degree_bound_log;
-    let quotient = (sigma_fri_step_list / 4) as usize;
-    let remainder = sigma_fri_step_list % 4;
+    let quotient = (sigma_fri_step_list / 2) as usize;
+    let remainder = sigma_fri_step_list % 2;
 
-    let mut fri_steps = vec![4; quotient];
+    let mut fri_steps = vec![2; quotient];
     if remainder > 0 {
         fri_steps.push(remainder);
     }
