@@ -3,7 +3,9 @@ use std::path::Path;
 
 use tempfile::tempdir;
 
-use madara_prover_common::models::{Proof, ProofAnnotations, ProverConfig, ProverParameters, ProverWorkingDirectory, PublicInput};
+use madara_prover_common::models::{
+    Proof, ProofAnnotations, ProverConfig, ProverParameters, ProverWorkingDirectory, PublicInput,
+};
 use madara_prover_common::toolkit::{read_json_from_file, write_json_to_file};
 
 use crate::error::{ProverError, VerifierError};
@@ -272,14 +274,8 @@ pub async fn run_verifier_async(
     annotation_file: &Path,
     extra_output_file: &Path,
 ) -> Result<ProofAnnotations, VerifierError> {
-
     // Call the verifier
-    run_verifier_from_command_line_async(
-        in_file,
-        annotation_file,
-        extra_output_file,
-    )
-    .await?;
+    run_verifier_from_command_line_async(in_file, annotation_file, extra_output_file).await?;
 
     let annotations = ProofAnnotations {
         annotation_file: annotation_file.into(),

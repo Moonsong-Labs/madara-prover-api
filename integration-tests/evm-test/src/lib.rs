@@ -11,14 +11,15 @@ use stark_evm_adapter::{
     annotation_parser::{split_fri_merkle_statements, SplitProofs},
     ContractFunctionCall,
 };
-use std::{
-    convert::TryFrom, fs, path::PathBuf, str::FromStr, sync::Arc
-};
+use std::{convert::TryFrom, fs, path::PathBuf, str::FromStr, sync::Arc};
 
 /// Verify a proof file against Ethereum SHARP contracts.
-/// 
+///
 /// See lib.rs for more details
-pub async fn verify_annotated_proof_with_l1(annotated_proof_file: &PathBuf, mainnet_rpc: String) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn verify_annotated_proof_with_l1(
+    annotated_proof_file: &PathBuf,
+    mainnet_rpc: String,
+) -> Result<(), Box<dyn std::error::Error>> {
     let proof_str = fs::read_to_string(annotated_proof_file)?;
     let annotated_proof: AnnotatedProof = serde_json::from_str(proof_str.as_str())?;
 
@@ -28,7 +29,10 @@ pub async fn verify_annotated_proof_with_l1(annotated_proof_file: &PathBuf, main
     verify_split_proofs_with_l1(&split_proofs, mainnet_rpc).await
 }
 
-pub async fn verify_split_proofs_with_l1(split_proofs: &SplitProofs, mainnet_rpc: String) -> Result<(), Box<dyn std::error::Error>> {
+pub async fn verify_split_proofs_with_l1(
+    split_proofs: &SplitProofs,
+    mainnet_rpc: String,
+) -> Result<(), Box<dyn std::error::Error>> {
     let anvil = Some(Anvil::new().fork(mainnet_rpc).spawn());
     let endpoint = anvil.as_ref().unwrap().endpoint();
     let provider = Provider::<Http>::try_from(endpoint.as_str())?;
