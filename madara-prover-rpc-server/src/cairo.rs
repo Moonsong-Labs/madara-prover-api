@@ -95,6 +95,7 @@ pub fn run_in_proof_mode(
         proof_mode,
         secure_run: None,
         disable_trace_padding: false,
+        allow_missing_builtins: None,
     };
 
     let mut hint_processor = BuiltinHintProcessor::new_empty();
