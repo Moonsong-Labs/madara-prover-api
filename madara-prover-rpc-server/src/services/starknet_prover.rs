@@ -115,7 +115,7 @@ fn make_bootloader_tasks(
         pie.map(|pie| TaskSpec {
             task: Task::Pie(pie),
         })
-        .map_err(BootloaderTaskError::Pie)
+            .map_err(BootloaderTaskError::Pie)
     });
 
     program_tasks.chain(cairo_pie_tasks).collect()
