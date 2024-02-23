@@ -47,6 +47,9 @@ jobs:
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
 
+      - name: Cargo fmt
+        run: cargo fmt --check
+
       - name: Log in to Github container registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
 
@@ -56,15 +59,11 @@ jobs:
           cache_image=$(echo ghcr.io/${GITHUB_REPOSITORY}/build-cache | tr '[:upper:]' '[:lower:]')
           echo "STONE_PROVER_DOCKER_CACHE=$(echo ${cache_image})" >> $GITHUB_ENV
 
-
       - name: Download Docker cache image (if available)
         run: docker pull ${STONE_PROVER_DOCKER_CACHE} || true
 
       - name: Build
         run: cargo build --verbose
-
-      - name: Cargo fmt
-        run: cargo fmt --check
 
       - name: Lint with Clippy
         run: cargo clippy -- -D warnings
