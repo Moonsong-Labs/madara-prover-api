@@ -10,8 +10,8 @@ mod tests {
     use stone_prover_sdk::json::read_json_from_file;
     use stone_prover_sdk::models::PublicInput;
 
-    use madara_prover_rpc_server::cairo::ExecutionArtifacts;
     use madara_prover_rpc_server::services::starknet_prover::run_bootloader_in_proof_mode;
+    use stone_prover_sdk::cairo_vm::ExecutionArtifacts;
     use test_cases::{get_test_case_file_path, load_test_case_file};
     use test_fixtures::{assert_memory_eq, assert_private_input_eq};
 

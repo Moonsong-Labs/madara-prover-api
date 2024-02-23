@@ -22,7 +22,6 @@ use tonic::{Request, Response, Status};
 use stone_prover_sdk::error::ProverError;
 use stone_prover_sdk::models::{Proof, ProverConfig, ProverWorkingDirectory};
 
-use crate::cairo::{extract_execution_artifacts, ExecutionArtifacts, ExecutionError};
 use crate::services::common::{
     call_prover, format_prover_error, get_prover_parameters, verify_and_annotate_proof,
 };
@@ -30,6 +29,7 @@ use crate::services::starknet_prover::starknet_prover_proto::starknet_prover_ser
 use crate::services::starknet_prover::starknet_prover_proto::{
     StarknetExecutionRequest, StarknetProverResponse,
 };
+use stone_prover_sdk::cairo_vm::{extract_execution_artifacts, ExecutionArtifacts, ExecutionError};
 
 pub mod starknet_prover_proto {
     tonic::include_proto!("starknet_prover");

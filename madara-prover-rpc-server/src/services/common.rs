@@ -7,8 +7,8 @@ use stone_prover_sdk::prover::run_prover_async;
 use stone_prover_sdk::verifier::run_verifier_with_annotations_async;
 use tonic::Status;
 
-use crate::cairo::ExecutionArtifacts;
 use crate::evm_adapter;
+use stone_prover_sdk::cairo_vm::ExecutionArtifacts;
 
 pub async fn call_prover(
     execution_artifacts: &ExecutionArtifacts,

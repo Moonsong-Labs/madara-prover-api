@@ -1,24 +1,28 @@
 use cairo_vm::air_private_input::{AirPrivateInput, AirPrivateInputSerializable};
 use tonic::{Request, Response, Status};
 
-use crate::cairo::{
-    extract_execution_artifacts, run_in_proof_mode, ExecutionArtifacts, ExecutionError,
-};
+use crate::cairo::execution_error_to_status;
 use crate::services::common;
 use crate::services::common::format_prover_error;
 use crate::services::prover::prover_proto::prover_server::Prover;
 use crate::services::prover::prover_proto::{
     ExecutionRequest, ExecutionResponse, ProverRequest, ProverResponse,
 };
+use stone_prover_sdk::cairo_vm::{
+    extract_execution_artifacts, run_in_proof_mode, ExecutionArtifacts, ExecutionError,
+};
 use stone_prover_sdk::error::ProverError;
-use stone_prover_sdk::models::{Proof, ProverConfig, ProverWorkingDirectory};
+use stone_prover_sdk::models::{Layout, Proof, ProverConfig, ProverWorkingDirectory};
 
 pub mod prover_proto {
     tonic::include_proto!("prover");
 }
 
-fn run_cairo_program_in_proof_mode(program: &[u8]) -> Result<ExecutionArtifacts, ExecutionError> {
-    let (cairo_runner, vm) = run_in_proof_mode(program)?;
+fn run_cairo_program_in_proof_mode(
+    program: &[u8],
+    layout: Layout,
+) -> Result<ExecutionArtifacts, ExecutionError> {
+    let (cairo_runner, vm) = run_in_proof_mode(program, layout)?;
     extract_execution_artifacts(cairo_runner, vm)
 }
 
@@ -33,7 +37,7 @@ fn format_execution_result(
                 trace: artifacts.trace,
             })
             .map_err(|_| Status::internal("Failed to serialize public input")),
-        Err(e) => Err(e.into()),
+        Err(e) => Err(execution_error_to_status(e)),
     }
 }
 
@@ -69,7 +73,8 @@ impl Prover for ProverService {
     ) -> Result<Response<ExecutionResponse>, Status> {
         let execution_request = request.into_inner();
 
-        let execution_result = run_cairo_program_in_proof_mode(&execution_request.program);
+        let layout = Layout::StarknetWithKeccak;
+        let execution_result = run_cairo_program_in_proof_mode(&execution_request.program, layout);
         let execution_result = format_execution_result(execution_result);
 
         execution_result.map(Response::new)
@@ -123,8 +128,9 @@ impl Prover for ProverService {
         } = request.into_inner();
 
         let prover_config = get_prover_config(prover_config_str)?;
+        let layout = Layout::StarknetWithKeccak;
 
-        let execution_artifacts = run_cairo_program_in_proof_mode(&program);
+        let execution_artifacts = run_cairo_program_in_proof_mode(&program, layout);
         let execution_artifacts = execution_artifacts
             .map_err(|e| Status::internal(format!("Failed to run program: {e}")))?;
 
