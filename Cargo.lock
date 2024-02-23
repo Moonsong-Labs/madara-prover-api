@@ -542,6 +542,36 @@ dependencies = [
 ]
 
 [[package]]
+name = "cairo-vm"
+version = "1.0.0-rc0"
+source = "git+https://github.com/Moonsong-Labs/cairo-vm?rev=e0a4653aa5634664a3f792b38715a572e9f89b44#e0a4653aa5634664a3f792b38715a572e9f89b44"
+dependencies = [
+ "anyhow",
+ "bincode",
+ "bitvec",
+ "generic-array",
+ "hashbrown 0.14.3",
+ "hex",
+ "keccak",
+ "lazy_static",
+ "mimalloc",
+ "nom",
+ "num-bigint",
+ "num-integer",
+ "num-prime",
+ "num-traits",
+ "rand",
+ "serde",
+ "serde_json",
+ "sha2",
+ "sha3",
+ "starknet-crypto",
+ "starknet-types-core",
+ "thiserror-no-std",
+ "zip",
+]
+
+[[package]]
 name = "camino"
 version = "1.1.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1992,12 +2022,12 @@ name = "integration-tests"
 version = "0.1.0"
 dependencies = [
  "evm-adapter",
- "madara-prover-common",
  "madara-prover-rpc-client",
  "madara-prover-rpc-server",
  "rand",
  "rstest",
  "serde_json",
+ "stone-prover-sdk",
  "test-cases",
  "test-fixtures",
  "tokio",
@@ -2212,27 +2242,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "madara-prover-common"
-version = "0.1.0"
-dependencies = [
- "cairo-vm",
- "rstest",
- "serde",
- "serde_json",
- "stark_evm_adapter",
- "tempfile",
- "test-cases",
-]
-
-[[package]]
 name = "madara-prover-rpc-client"
 version = "0.1.0"
 dependencies = [
- "cairo-vm",
- "madara-prover-common",
+ "cairo-vm 1.0.0-rc0 (git+https://github.com/Moonsong-Labs/cairo-vm?rev=e0a4653aa5634664a3f792b38715a572e9f89b44)",
  "prost",
  "rstest",
  "serde_json",
+ "stone-prover-sdk",
  "tokio",
  "tonic",
  "tonic-build",
@@ -2243,14 +2260,13 @@ name = "madara-prover-rpc-server"
 version = "0.1.0"
 dependencies = [
  "bincode",
- "cairo-vm",
- "madara-prover-common",
+ "cairo-vm 1.0.0-rc0 (git+https://github.com/Moonsong-Labs/cairo-vm?rev=e0a4653aa5634664a3f792b38715a572e9f89b44)",
  "prost",
  "rstest",
  "serde",
  "serde_json",
  "stark_evm_adapter",
- "stone-prover",
+ "stone-prover-sdk",
  "test-cases",
  "test-fixtures",
  "thiserror",
@@ -3624,17 +3640,16 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
-name = "stone-prover"
+name = "stone-prover-sdk"
 version = "0.1.0"
+source = "git+https://github.com/Moonsong-Labs/stone-prover-sdk?tag=v0.3.0#d5926ea42b607bd3efddc6129600ab3a977d7388"
 dependencies = [
- "cairo-vm",
- "madara-prover-common",
- "rstest",
+ "bincode",
+ "cairo-vm 1.0.0-rc0 (git+https://github.com/Moonsong-Labs/cairo-vm?rev=b2f69d230416129a84ad8237ccc13d088992f74b)",
  "serde",
  "serde_json",
+ "stark_evm_adapter",
  "tempfile",
- "test-cases",
- "test-fixtures",
  "thiserror",
  "tokio",
 ]
@@ -3802,10 +3817,10 @@ version = "0.1.0"
 name = "test-fixtures"
 version = "0.1.0"
 dependencies = [
- "cairo-vm",
- "madara-prover-common",
+ "cairo-vm 1.0.0-rc0 (git+https://github.com/Moonsong-Labs/cairo-vm?rev=e0a4653aa5634664a3f792b38715a572e9f89b44)",
  "rstest",
  "serde_json",
+ "stone-prover-sdk",
  "tempfile",
  "test-cases",
 ]

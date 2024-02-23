@@ -11,7 +11,6 @@ use tokio::net::UnixStream;
 use tokio::task::JoinHandle;
 use tonic::transport::{Endpoint, Uri};
 use tower::service_fn;
-use test_fixtures::prover_in_path;
 
 pub type RpcServer = JoinHandle<Result<(), ServerError>>;
 
@@ -56,15 +55,12 @@ async fn rpc_client_server<T>(
 }
 
 #[fixture]
-pub async fn prover_client_server(
-    #[from(prover_in_path)] _path: (),
-) -> (ProverClient<tonic::transport::Channel>, RpcServer) {
+pub async fn prover_client_server() -> (ProverClient<tonic::transport::Channel>, RpcServer) {
     rpc_client_server(ProverClient::new).await
 }
 
 #[fixture]
 pub async fn starknet_prover_client_server(
-    #[from(prover_in_path)] _path: (),
 ) -> (StarknetProverClient<tonic::transport::Channel>, RpcServer) {
     rpc_client_server(StarknetProverClient::new).await
 }

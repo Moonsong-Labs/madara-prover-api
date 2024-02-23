@@ -1,11 +1,11 @@
 use std::path::Path;
 
-use madara_prover_common::toolkit::read_json_from_file;
 use stark_evm_adapter::{
     annotated_proof::AnnotatedProof,
     annotation_parser::{split_fri_merkle_statements, SplitProofs},
 };
 use std::io::BufRead;
+use stone_prover_sdk::json::read_json_from_file;
 use thiserror::Error;
 
 #[derive(Debug, Error)]
@@ -69,7 +69,7 @@ mod tests {
             &annotations_file,
             &extra_annotations_file,
         )
-        .unwrap();
+            .unwrap();
 
         assert!(split_proofs.merkle_statements.len() > 0);
         assert!(split_proofs.fri_merkle_statements.len() > 0);

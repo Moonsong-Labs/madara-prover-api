@@ -5,8 +5,8 @@ mod tests {
     use crate::integration::toolkit::{starknet_prover_client_server, RpcServer};
     use madara_prover_rpc_client::services::starknet_prover::execute_and_prove;
     use rstest::rstest;
-    use madara_prover_common::models::Proof;
-    use madara_prover_common::toolkit::read_json_from_file;
+    use stone_prover_sdk::models::Proof;
+    use stone_prover_sdk::json::read_json_from_file;
     use madara_prover_rpc_client::services::starknet_prover::starknet_prover_proto::starknet_prover_client::StarknetProverClient;
     use test_cases::get_test_case_file_path;
 

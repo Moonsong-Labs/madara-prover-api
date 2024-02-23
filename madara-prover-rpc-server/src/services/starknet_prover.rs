@@ -19,8 +19,8 @@ use cairo_vm::vm::vm_core::VirtualMachine;
 use cairo_vm::{any_box, Felt252};
 use tonic::{Request, Response, Status};
 
-use madara_prover_common::models::{Proof, ProverConfig, ProverWorkingDirectory};
-use stone_prover::error::ProverError;
+use stone_prover_sdk::error::ProverError;
+use stone_prover_sdk::models::{Proof, ProverConfig, ProverWorkingDirectory};
 
 use crate::cairo::{extract_execution_artifacts, ExecutionArtifacts, ExecutionError};
 use crate::services::common::{

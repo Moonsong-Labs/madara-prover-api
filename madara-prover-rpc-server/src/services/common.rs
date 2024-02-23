@@ -1,12 +1,14 @@
-use crate::cairo::ExecutionArtifacts;
-use crate::evm_adapter;
-use madara_prover_common::models::{
+use stone_prover_sdk::error::{ProverError, VerifierError};
+use stone_prover_sdk::fri::generate_prover_parameters;
+use stone_prover_sdk::models::{
     Proof, ProofAnnotations, ProverConfig, ProverParameters, ProverWorkingDirectory,
 };
-use stone_prover::error::{ProverError, VerifierError};
-use stone_prover::fri::generate_prover_parameters;
-use stone_prover::prover::{run_prover_async, run_verifier_async};
+use stone_prover_sdk::prover::run_prover_async;
+use stone_prover_sdk::verifier::run_verifier_with_annotations_async;
 use tonic::Status;
+
+use crate::cairo::ExecutionArtifacts;
+use crate::evm_adapter;
 
 pub async fn call_prover(
     execution_artifacts: &ExecutionArtifacts,
@@ -33,12 +35,17 @@ pub async fn call_verifier(
     working_dir.annotations_file = Some(annotations_file.clone());
     working_dir.extra_annotations_file = Some(extra_annotations_file.clone());
 
-    run_verifier_async(
+    run_verifier_with_annotations_async(
         working_dir.proof_file.as_path(),
         &annotations_file,
         &extra_annotations_file,
     )
-    .await
+    .await?;
+
+    Ok(ProofAnnotations {
+        annotation_file: annotations_file,
+        extra_output_file: extra_annotations_file,
+    })
 }
 
 pub fn format_prover_error(e: ProverError) -> Status {
@@ -96,8 +103,8 @@ pub async fn verify_and_annotate_proof(
 ) -> Result<(), Status> {
     let _ = // TODO: return type seems worthless here
         call_verifier(working_dir)
-        .await
-        .map_err(format_verifier_error)?;
+            .await
+            .map_err(format_verifier_error)?;
 
     let proof_file_path = working_dir.proof_file.as_path();
     let annotations_file_path = working_dir

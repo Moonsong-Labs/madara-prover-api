@@ -1,7 +1,7 @@
 use tonic::Status;
 
-use madara_prover_common::models::Proof;
 use starknet_prover_proto::{StarknetExecutionRequest, StarknetProverResponse};
+use stone_prover_sdk::models::Proof;
 
 use crate::services::starknet_prover::starknet_prover_proto::starknet_prover_client::StarknetProverClient;
 

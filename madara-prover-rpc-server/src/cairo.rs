@@ -12,7 +12,7 @@ use cairo_vm::vm::vm_core::VirtualMachine;
 use thiserror::Error;
 use tonic::Status;
 
-use madara_prover_common::models::PublicInput;
+use stone_prover_sdk::models::PublicInput;
 
 #[derive(Error, Debug)]
 pub enum ExecutionError {

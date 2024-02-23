@@ -10,8 +10,8 @@ use crate::services::prover::prover_proto::prover_server::Prover;
 use crate::services::prover::prover_proto::{
     ExecutionRequest, ExecutionResponse, ProverRequest, ProverResponse,
 };
-use madara_prover_common::models::{Proof, ProverConfig, ProverWorkingDirectory};
-use stone_prover::error::ProverError;
+use stone_prover_sdk::error::ProverError;
+use stone_prover_sdk::models::{Proof, ProverConfig, ProverWorkingDirectory};
 
 pub mod prover_proto {
     tonic::include_proto!("prover");

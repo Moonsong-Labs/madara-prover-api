@@ -7,9 +7,9 @@ mod tests {
     use cairo_vm::types::program::Program;
     use cairo_vm::vm::runners::cairo_pie::CairoPie;
     use rstest::{fixture, rstest};
+    use stone_prover_sdk::json::read_json_from_file;
+    use stone_prover_sdk::models::PublicInput;
 
-    use madara_prover_common::models::PublicInput;
-    use madara_prover_common::toolkit::read_json_from_file;
     use madara_prover_rpc_server::cairo::ExecutionArtifacts;
     use madara_prover_rpc_server::services::starknet_prover::run_bootloader_in_proof_mode;
     use test_cases::{get_test_case_file_path, load_test_case_file};

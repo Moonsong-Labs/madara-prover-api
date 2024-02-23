@@ -42,11 +42,9 @@ pub async fn prove_cairo_program() -> Result((), Box<dyn Error>) {
 ## Project structure
 
 * `integration-tests`: Integration tests.
-* `madara-prover-common`: Types and functions used in both the server and client.
 * `madara-prover-rpc-client`: Prover API client.
 * `madara-prover-rpc-server`: Prover API server.
 * `protocols`: Protocol buffers are stored here.
-* `stone-prover`: Rust wrapper for the Stone prover.
 * `test-cases`: Cairo programs used as test cases.
 * `test-fixtures`: Shared test fixtures and utilities.
 
