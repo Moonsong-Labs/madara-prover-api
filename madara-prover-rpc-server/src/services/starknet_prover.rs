@@ -50,6 +50,8 @@ pub fn cairo_run(
         .secure_run
         .unwrap_or(!cairo_run_config.proof_mode);
 
+    let allow_missing_builtins = cairo_run_config.allow_missing_builtins.unwrap_or(false);
+
     let mut cairo_runner = CairoRunner::new(
         program,
         cairo_run_config.layout,
@@ -60,7 +62,7 @@ pub fn cairo_run(
     }
 
     let mut vm = VirtualMachine::new(cairo_run_config.trace_enabled);
-    let end = cairo_runner.initialize(&mut vm)?;
+    let end = cairo_runner.initialize(&mut vm, allow_missing_builtins)?;
     // check step calculation
 
     cairo_runner
@@ -134,6 +136,7 @@ pub fn run_bootloader_in_proof_mode(
         proof_mode,
         secure_run: None,
         disable_trace_padding: false,
+        allow_missing_builtins: None,
     };
 
     let n_tasks = tasks.len();
