@@ -1,7 +1,7 @@
 use cairo_vm::air_private_input::AirPrivateInput;
 use tonic::Status;
 
-use madara_prover_common::models::{Proof, ProverConfig, ProverParameters, PublicInput};
+use stone_prover_sdk::models::{Proof, ProverConfig, ProverParameters, PublicInput};
 
 use prover_proto::prover_client::ProverClient;
 use prover_proto::{ExecutionRequest, ExecutionResponse, ProverRequest, ProverResponse};

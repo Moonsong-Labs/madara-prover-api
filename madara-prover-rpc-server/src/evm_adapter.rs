@@ -1,11 +1,11 @@
 use std::path::Path;
 
-use madara_prover_common::toolkit::read_json_from_file;
 use stark_evm_adapter::{
     annotated_proof::AnnotatedProof,
     annotation_parser::{split_fri_merkle_statements, SplitProofs},
 };
 use std::io::BufRead;
+use stone_prover_sdk::json::read_json_from_file;
 use thiserror::Error;
 
 #[derive(Debug, Error)]

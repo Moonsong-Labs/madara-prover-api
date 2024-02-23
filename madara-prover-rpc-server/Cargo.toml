@@ -13,9 +13,8 @@ path = "src/lib.rs"
 
 [dependencies]
 cairo-vm = { workspace = true }
-madara-prover-common = { path = "../madara-prover-common" }
 prost = { workspace = true }
-stone-prover = { path = "../stone-prover" }
+stone-prover-sdk = { workspace = true }
 thiserror = { workspace = true }
 tokio = { workspace = true }
 tonic = { workspace = true }

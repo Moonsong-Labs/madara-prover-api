@@ -8,8 +8,8 @@ publish = false
 
 [dependencies]
 cairo-vm = { workspace = true }
-madara-prover-common = { path = "../madara-prover-common" }
 rstest = { workspace = true }
 serde_json = { workspace = true }
+stone-prover-sdk = { workspace = true }
 tempfile = { workspace = true }
 test-cases = { path = "../test-cases" }

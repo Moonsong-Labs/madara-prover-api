@@ -7,9 +7,9 @@ edition = "2021"
 
 [dependencies]
 cairo-vm = { workspace = true }
-madara-prover-common = { path = "../madara-prover-common" }
 prost = { workspace = true }
 serde_json = { workspace = true }
+stone-prover-sdk = { workspace = true }
 tokio = { workspace = true }
 tonic = { workspace = true }
 

@@ -10,6 +10,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  STONE_SDK_VERSION: v0.3.0
+  STONE_INSTALL_DIR: ./dependencies/stone
 
 jobs:
   build:
@@ -50,17 +52,32 @@ jobs:
       - name: Cargo fmt
         run: cargo fmt --check
 
-      - name: Log in to Github container registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-
-      - name: Set cache image environment variables
+      - name: Set Stone SDK version in context
+        id: set-env-sdk-version
         run: |
-          # Uppercase characters are not allowed in Docker tags
-          cache_image=$(echo ghcr.io/${GITHUB_REPOSITORY}/build-cache | tr '[:upper:]' '[:lower:]')
-          echo "STONE_PROVER_DOCKER_CACHE=$(echo ${cache_image})" >> $GITHUB_ENV
+          echo "STONE_SDK_VERSION=${STONE_SDK_VERSION}" >> $GITHUB_ENV
+          echo "STONE_INSTALL_DIR=${STONE_INSTALL_DIR}" >> $GITHUB_ENV
 
-      - name: Download Docker cache image (if available)
-        run: docker pull ${STONE_PROVER_DOCKER_CACHE} || true
+      - name: Cache Stone prover and verifier
+        id: cache-stone
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STONE_INSTALL_DIR }}
+          key: stone-${{ runner.os }}-${{ env.STONE_SDK_VERSION }}
+
+      - name: Download Stone
+        if: steps.cache-stone.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p "${STONE_INSTALL_DIR}"
+          wget https://github.com/Moonsong-Labs/stone-prover-sdk/releases/download/${STONE_SDK_VERSION}/cpu_air_prover -O "${STONE_INSTALL_DIR}/cpu_air_prover"
+          wget https://github.com/Moonsong-Labs/stone-prover-sdk/releases/download/${STONE_SDK_VERSION}/cpu_air_verifier -O "${STONE_INSTALL_DIR}/cpu_air_verifier"
+
+      - name: Set Stone in PATH
+        run: |
+          INSTALL_DIR=$(readlink -f ${STONE_INSTALL_DIR})
+          echo "${INSTALL_DIR}" >> $GITHUB_PATH
+          chmod +x ${INSTALL_DIR}/cpu_air_prover
+          chmod +x ${INSTALL_DIR}/cpu_air_verifier
 
       - name: Build
         run: cargo build --verbose
@@ -70,11 +87,3 @@ jobs:
 
       - name: Run tests
         run: cargo test --verbose
-
-      - name: Push the image to the cache
-        # It's not possible to push packages from fork PRs.
-        if: github.event.pull_request.head.repo.full_name == github.repository
-        run: |
-          docker tag stone-prover-build:latest ${STONE_PROVER_DOCKER_CACHE}
-          docker push ${STONE_PROVER_DOCKER_CACHE}
-
