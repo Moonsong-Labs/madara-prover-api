@@ -69,7 +69,7 @@ mod tests {
             &annotations_file,
             &extra_annotations_file,
         )
-            .unwrap();
+        .unwrap();
 
         assert!(split_proofs.merkle_statements.len() > 0);
         assert!(split_proofs.fri_merkle_statements.len() > 0);
