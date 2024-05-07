@@ -2,15 +2,47 @@ syntax = "proto3";
 package starknet_prover;
 
 service StarknetProver {
-  rpc ExecuteAndProve(StarknetExecutionRequest) returns (StarknetProverResponse);
+  rpc ExecuteAndProve(StarknetJobExecutionRequest) returns (StarknetJobStatusResponse);
+  rpc GetJobStatus(StarknetJobStatusRequest) returns (StarknetJobStatusResponse);
 }
 
-message StarknetExecutionRequest {
+message StarknetProverResponse {
+  string proof = 1;
+}
+
+message FailureResponse {
+  string error = 1;
+}
+
+message RunningResponse {}
+
+enum JobStatus {
+  // The job is still running.
+  RUNNING = 0;
+  // The job succeeded.
+  SUCCESS = 1;
+  // The job failed.
+  FAILURE = 2;
+  // The specified job ID is unknown from the system.
+  UNKNOWN = 3;
+}
+
+message StarknetJobExecutionRequest {
   repeated bytes programs = 1;
   repeated bytes pies = 2;
   bool split_proof = 3;
 }
 
-message StarknetProverResponse {
-  string proof = 1;
+message StarknetJobStatusRequest {
+  string job_id = 1;
+}
+
+message StarknetJobStatusResponse {
+  string job_id = 1;
+  JobStatus status = 2;
+  oneof data {
+    RunningResponse running = 3;
+    StarknetProverResponse success = 4;
+    FailureResponse failure = 5;
+  }
 }
