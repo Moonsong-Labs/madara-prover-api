@@ -4,7 +4,7 @@ RPC server and client to run the Stone Prover on the Madara sequencer.
 
 ## Description
 
-This project provides a server that can run any set of Cairo programs on top of the Bootloader to generate the state diff and proof of execution of the programs.
+This project provides a server that can run any set of Cairo programs on top of the Starknet bootloader and generate the proof of execution of these programs.
 This server is used as part of the Madara sequencer to prove the transactions inside each (Madara) block.
 
 To prove transactions, the server relies on the [Stone prover](https://github.com/starkware-libs/stone-prover).
