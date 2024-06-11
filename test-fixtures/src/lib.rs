@@ -3,7 +3,6 @@ use std::io::Read;
 use std::path::{Path, PathBuf};
 
 use cairo_vm::air_private_input::{AirPrivateInput, AirPrivateInputSerializable};
-use cairo_vm::vm::runners::builtin_runner::OUTPUT_BUILTIN_NAME;
 use cairo_vm::Felt252;
 use rstest::fixture;
 use tempfile::NamedTempFile;
@@ -190,8 +189,8 @@ pub fn assert_memory_eq(actual: &Vec<u8>, expected: &Vec<u8>) {
 
 pub fn assert_private_input_eq(actual: AirPrivateInput, expected: AirPrivateInput) {
     let actual_map = {
-        let mut map = actual.0;
-        map.remove(OUTPUT_BUILTIN_NAME);
+        let map = actual.0;
+        // map.remove(OUTPUT_BUILTIN_NAME);
         map
     };
 

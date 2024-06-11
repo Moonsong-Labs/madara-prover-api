@@ -13,6 +13,7 @@ path = "src/lib.rs"
 
 [dependencies]
 cairo-vm = { workspace = true }
+cairo-bootloader = { workspace = true }
 prost = { workspace = true }
 stone-prover-sdk = { workspace = true }
 thiserror = { workspace = true }
