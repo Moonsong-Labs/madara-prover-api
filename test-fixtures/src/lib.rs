@@ -189,7 +189,6 @@ pub fn assert_memory_eq(actual: &Vec<u8>, expected: &Vec<u8>) {
 
 pub fn assert_private_input_eq(actual: AirPrivateInput, expected: AirPrivateInput) {
     let actual_map = {
-        
         // map.remove(OUTPUT_BUILTIN_NAME);
         actual.0
     };
