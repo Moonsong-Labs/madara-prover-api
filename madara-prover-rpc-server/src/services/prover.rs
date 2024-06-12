@@ -23,8 +23,8 @@ fn run_cairo_program_in_proof_mode(
     layout: Layout,
 ) -> Result<ExecutionArtifacts, ExecutionError> {
     let allow_missing_builtins = Some(false);
-    let (cairo_runner, vm) = run_in_proof_mode(program, layout, allow_missing_builtins)?;
-    extract_execution_artifacts(cairo_runner, vm)
+    let cairo_runner = run_in_proof_mode(program, layout, allow_missing_builtins)?;
+    extract_execution_artifacts(cairo_runner)
 }
 
 fn format_execution_result(

@@ -2,16 +2,14 @@
 mod tests {
     use std::path::Path;
 
+    use cairo_bootloader::{Task, TaskSpec};
     use cairo_vm::air_private_input::{AirPrivateInput, AirPrivateInputSerializable};
-    use cairo_vm::hint_processor::builtin_hint_processor::bootloader::types::{Task, TaskSpec};
     use cairo_vm::types::program::Program;
     use cairo_vm::vm::runners::cairo_pie::CairoPie;
     use rstest::{fixture, rstest};
+    use stone_prover_sdk::cairo_vm::{run_bootloader_in_proof_mode, ExecutionArtifacts};
     use stone_prover_sdk::json::read_json_from_file;
     use stone_prover_sdk::models::PublicInput;
-
-    use madara_prover_rpc_server::services::starknet_prover::run_bootloader_in_proof_mode;
-    use stone_prover_sdk::cairo_vm::ExecutionArtifacts;
     use test_cases::{get_test_case_file_path, load_test_case_file};
     use test_fixtures::{assert_memory_eq, assert_private_input_eq};
 
@@ -61,7 +59,7 @@ mod tests {
             task: Task::Program(program),
         }];
 
-        let artifacts = run_bootloader_in_proof_mode(&bootloader, tasks).unwrap();
+        let artifacts = run_bootloader_in_proof_mode(&bootloader, tasks, None, None, None).unwrap();
 
         assert_eq!(artifacts.public_input, expected_output.public_input);
         assert_eq!(artifacts.trace, expected_output.trace);
@@ -81,12 +79,12 @@ mod tests {
             test_case_dir.to_string_lossy()
         ));
 
-        let cairo_pie = CairoPie::from_file(cairo_pie_path.as_path()).unwrap();
+        let cairo_pie = CairoPie::read_zip_file(cairo_pie_path.as_path()).unwrap();
         let tasks = vec![TaskSpec {
             task: Task::Pie(cairo_pie),
         }];
 
-        let artifacts = run_bootloader_in_proof_mode(&bootloader, tasks).unwrap();
+        let artifacts = run_bootloader_in_proof_mode(&bootloader, tasks, None, None, None).unwrap();
 
         assert_eq!(artifacts.public_input, expected_output.public_input);
         assert_eq!(artifacts.trace, expected_output.trace);
@@ -102,12 +100,12 @@ mod tests {
 
         let os_pie_path = get_test_case_file_path("starknet-os/os.zip");
 
-        let os_pie = CairoPie::from_file(os_pie_path.as_path()).unwrap();
+        let os_pie = CairoPie::read_zip_file(os_pie_path.as_path()).unwrap();
         let tasks = vec![TaskSpec {
             task: Task::Pie(os_pie),
         }];
 
-        let artifacts = run_bootloader_in_proof_mode(&bootloader, tasks).unwrap();
+        let artifacts = run_bootloader_in_proof_mode(&bootloader, tasks, None, None, None).unwrap();
 
         assert_eq!(artifacts.public_input, expected_output.public_input);
         assert_eq!(artifacts.trace, expected_output.trace);

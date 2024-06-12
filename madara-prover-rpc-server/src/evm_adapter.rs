@@ -71,8 +71,8 @@ mod tests {
         )
         .unwrap();
 
-        assert!(split_proofs.merkle_statements.len() > 0);
-        assert!(split_proofs.fri_merkle_statements.len() > 0);
-        assert!(split_proofs.main_proof.proof.len() > 0);
+        assert!(!split_proofs.merkle_statements.is_empty());
+        assert!(!split_proofs.fri_merkle_statements.is_empty());
+        assert!(!split_proofs.main_proof.proof.is_empty());
     }
 }

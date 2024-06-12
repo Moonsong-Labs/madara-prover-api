@@ -1,7 +1,7 @@
 use stone_prover_sdk::error::{ProverError, VerifierError};
 use stone_prover_sdk::fri::generate_prover_parameters;
 use stone_prover_sdk::models::{
-    Proof, ProofAnnotations, ProverConfig, ProverParameters, ProverWorkingDirectory,
+    Proof, ProofAnnotations, ProverConfig, ProverParameters, ProverWorkingDirectory, Verifier,
 };
 use stone_prover_sdk::prover::run_prover_async;
 use stone_prover_sdk::verifier::run_verifier_with_annotations_async;
@@ -87,7 +87,7 @@ pub fn get_prover_parameters(
             .map_err(|_| Status::invalid_argument("Could not read prover parameters"));
     }
 
-    let last_layer_degree_bound = 64;
+    let last_layer_degree_bound = Verifier::Stone;
     Ok(generate_prover_parameters(
         nb_steps,
         last_layer_degree_bound,

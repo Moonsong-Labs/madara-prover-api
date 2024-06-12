@@ -1,26 +1,17 @@
-use std::any::Any;
-use std::collections::HashMap;
-
 use cairo_vm::cairo_run::CairoRunConfig;
-use cairo_vm::hint_processor::builtin_hint_processor::bootloader::types::{
-    BootloaderConfig, BootloaderInput, PackedOutput, SimpleBootloaderInput, Task, TaskSpec,
-};
-use cairo_vm::hint_processor::builtin_hint_processor::builtin_hint_processor_definition::BuiltinHintProcessor;
 use cairo_vm::hint_processor::hint_processor_definition::HintProcessor;
-use cairo_vm::types::errors::cairo_pie_error::CairoPieError;
 use cairo_vm::types::errors::program_errors::ProgramError;
 use cairo_vm::types::program::Program;
 use cairo_vm::vm::errors::cairo_run_errors::CairoRunError;
 use cairo_vm::vm::errors::vm_exception::VmException;
-use cairo_vm::vm::runners::cairo_pie::CairoPie;
 use cairo_vm::vm::runners::cairo_runner::CairoRunner;
 use cairo_vm::vm::security::verify_secure_runner;
-use cairo_vm::vm::vm_core::VirtualMachine;
-use cairo_vm::{any_box, Felt252};
+use std::any::Any;
+use std::collections::HashMap;
 use tonic::{Request, Response, Status};
 
 use stone_prover_sdk::error::ProverError;
-use stone_prover_sdk::models::{Proof, ProverConfig, ProverWorkingDirectory};
+use stone_prover_sdk::models::{Layout, Proof, ProverConfig, ProverWorkingDirectory};
 
 use crate::services::common::{
     call_prover, format_prover_error, get_prover_parameters, verify_and_annotate_proof,
@@ -29,7 +20,7 @@ use crate::services::starknet_prover::starknet_prover_proto::starknet_prover_ser
 use crate::services::starknet_prover::starknet_prover_proto::{
     StarknetExecutionRequest, StarknetProverResponse,
 };
-use stone_prover_sdk::cairo_vm::{extract_execution_artifacts, ExecutionArtifacts, ExecutionError};
+use stone_prover_sdk::cairo_vm::run_bootloader_in_proof_mode;
 
 pub mod starknet_prover_proto {
     tonic::include_proto!("starknet_prover");
@@ -45,7 +36,7 @@ pub fn cairo_run(
     cairo_run_config: &CairoRunConfig,
     hint_executor: &mut dyn HintProcessor,
     variables: HashMap<String, Box<dyn Any>>,
-) -> Result<(CairoRunner, VirtualMachine), CairoRunError> {
+) -> Result<CairoRunner, CairoRunError> {
     let secure_run = cairo_run_config
         .secure_run
         .unwrap_or(!cairo_run_config.proof_mode);
@@ -56,36 +47,29 @@ pub fn cairo_run(
         program,
         cairo_run_config.layout,
         cairo_run_config.proof_mode,
+        allow_missing_builtins,
     )?;
     for (key, value) in variables {
         cairo_runner.exec_scopes.insert_box(&key, value);
     }
 
-    let mut vm = VirtualMachine::new(cairo_run_config.trace_enabled);
-    let end = cairo_runner.initialize(&mut vm, allow_missing_builtins)?;
+    let end = cairo_runner.initialize(allow_missing_builtins)?;
     // check step calculation
 
     cairo_runner
-        .run_until_pc(end, &mut vm, hint_executor)
-        .map_err(|err| VmException::from_vm_error(&cairo_runner, &vm, err))?;
-    cairo_runner.end_run(
-        cairo_run_config.disable_trace_padding,
-        false,
-        &mut vm,
-        hint_executor,
-    )?;
-
-    vm.verify_auto_deductions()?;
-    cairo_runner.read_return_values(&mut vm)?;
+        .run_until_pc(end, hint_executor)
+        .map_err(|err| VmException::from_vm_error(&cairo_runner, err))?;
+    cairo_runner.end_run(cairo_run_config.disable_trace_padding, false, hint_executor)?;
+    cairo_runner.read_return_values(allow_missing_builtins)?;
     if cairo_run_config.proof_mode {
-        cairo_runner.finalize_segments(&mut vm)?;
+        cairo_runner.finalize_segments()?;
     }
     if secure_run {
-        verify_secure_runner(&cairo_runner, true, None, &mut vm)?;
+        verify_secure_runner(&cairo_runner, true, None)?;
     }
-    cairo_runner.relocate(&mut vm, cairo_run_config.relocate_mem)?;
+    cairo_runner.relocate(cairo_run_config.relocate_mem)?;
 
-    Ok((cairo_runner, vm))
+    Ok(cairo_runner)
 }
 
 #[derive(thiserror::Error, Debug)]
@@ -94,83 +78,7 @@ enum BootloaderTaskError {
     Program(#[from] ProgramError),
 
     #[error("Failed to read PIE: {0}")]
-    Pie(#[from] CairoPieError),
-}
-
-fn make_bootloader_tasks(
-    programs: &[Vec<u8>],
-    pies: &[Vec<u8>],
-) -> Result<Vec<TaskSpec>, BootloaderTaskError> {
-    let program_tasks = programs.iter().map(|program_bytes| {
-        let program = Program::from_bytes(program_bytes, Some("main"));
-        program
-            .map(|program| TaskSpec {
-                task: Task::Program(program),
-            })
-            .map_err(BootloaderTaskError::Program)
-    });
-
-    let cairo_pie_tasks = pies.iter().map(|pie_bytes| {
-        let pie = CairoPie::from_bytes(pie_bytes);
-        pie.map(|pie| TaskSpec {
-            task: Task::Pie(pie),
-        })
-        .map_err(BootloaderTaskError::Pie)
-    });
-
-    program_tasks.chain(cairo_pie_tasks).collect()
-}
-
-pub fn run_bootloader_in_proof_mode(
-    bootloader: &Program,
-    tasks: Vec<TaskSpec>,
-) -> Result<ExecutionArtifacts, ExecutionError> {
-    let proof_mode = true;
-    let layout = "starknet_with_keccak";
-
-    let cairo_run_config = CairoRunConfig {
-        entrypoint: "main",
-        trace_enabled: true,
-        relocate_mem: true,
-        layout,
-        proof_mode,
-        secure_run: None,
-        disable_trace_padding: false,
-        allow_missing_builtins: None,
-    };
-
-    let n_tasks = tasks.len();
-
-    let bootloader_input = BootloaderInput {
-        simple_bootloader_input: SimpleBootloaderInput {
-            fact_topologies_path: None,
-            single_page: false,
-            tasks,
-        },
-        bootloader_config: BootloaderConfig {
-            simple_bootloader_program_hash: Felt252::from(0),
-            supported_cairo_verifier_program_hashes: vec![],
-        },
-        packed_outputs: vec![PackedOutput::Plain(vec![]); n_tasks],
-    };
-
-    let mut hint_processor = BuiltinHintProcessor::new_empty();
-    let variables = HashMap::<String, Box<dyn Any>>::from([
-        ("bootloader_input".to_string(), any_box!(bootloader_input)),
-        (
-            "bootloader_program".to_string(),
-            any_box!(bootloader.clone()),
-        ),
-    ]);
-
-    let (cairo_runner, vm) = cairo_run(
-        bootloader,
-        &cairo_run_config,
-        &mut hint_processor,
-        variables,
-    )?;
-
-    extract_execution_artifacts(cairo_runner, vm)
+    Pie(#[from] std::io::Error),
 }
 
 /// Formats the output of the prover subprocess into the server response.
@@ -204,13 +112,19 @@ impl StarknetProver for StarknetProverService {
             .map_err(|e| Status::internal(format!("Failed to load bootloader program: {}", e)))?;
         let prover_config = ProverConfig::default();
 
-        let bootloader_tasks = make_bootloader_tasks(&programs, &pies).map_err(|e| {
-            Status::invalid_argument(format!("Could not parse programs/PIEs: {}", e))
-        })?;
+        let bootloader_tasks = stone_prover_sdk::cairo_vm::make_bootloader_tasks(&programs, &pies)
+            .map_err(|e| {
+                Status::invalid_argument(format!("Could not parse programs/PIEs: {}", e))
+            })?;
 
-        let execution_artifacts =
-            run_bootloader_in_proof_mode(&bootloader_program, bootloader_tasks)
-                .map_err(|e| Status::internal(format!("Failed to run bootloader: {e}")))?;
+        let execution_artifacts = run_bootloader_in_proof_mode(
+            &bootloader_program,
+            bootloader_tasks,
+            Some(Layout::StarknetWithKeccak),
+            None,
+            None,
+        )
+        .map_err(|e| Status::internal(format!("Failed to run bootloader: {e}")))?;
 
         let prover_parameters =
             get_prover_parameters(None, execution_artifacts.public_input.n_steps)?;

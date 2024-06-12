@@ -1,18 +1,32 @@
 [workspace]
 resolver = "2"
 
-members = ["integration-tests", "madara-prover-rpc-client", "madara-prover-rpc-server", "test-cases", "test-fixtures", "integration-tests/evm-test"]
+members = [
+  "integration-tests",
+  "madara-prover-rpc-client",
+  "madara-prover-rpc-server",
+  "test-cases",
+  "test-fixtures",
+  "integration-tests/evm-test",
+]
 
 [workspace.dependencies]
-cairo-vm = { git = "https://github.com/Moonsong-Labs/cairo-vm", rev = "e0a4653aa5634664a3f792b38715a572e9f89b44", features = ["extensive_hints"] }
+cairo-vm = { git = "https://github.com/lambdaclass/cairo-vm", rev = "05352b1c67859a4d8cd128575c1e68ca7e300341", features = [
+  "extensive_hints",
+] }
 prost = "0.12.1"
 serde = { version = "1.0.192", features = ["derive"] }
 serde_json = "1.0.108"
 stark_evm_adapter = "0.1.5"
-stone-prover-sdk = { git = "https://github.com/Moonsong-Labs/stone-prover-sdk", rev = "ed0499407dc0374c23eca373d88eb3465e15583b" }
+stone-prover-sdk = { git = "https://github.com/Moonsong-Labs/stone-prover-sdk", branch = "patch/cairo-vm-git-path" }
+cairo-bootloader = { git = "https://github.com/Moonsong-Labs/cairo-bootloader" }
 tempfile = "3.8.1"
 thiserror = "1.0.50"
-tokio = { version = "1.34.0", features = ["macros", "process", "rt-multi-thread"] }
-tonic = "0.10.2"
-tonic-build = "0.10.2"
+tokio = { version = "1.34.0", features = [
+  "macros",
+  "process",
+  "rt-multi-thread",
+] }
+tonic = "0.11.0"
+tonic-build = "0.11.0"
 rstest = "0.18.2"
